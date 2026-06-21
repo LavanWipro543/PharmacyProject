@@ -1,0 +1,185 @@
+package com.pharmacy.orderservice.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.pharmacy.orderservice.dto.CartItemResponse;
+import com.pharmacy.orderservice.dto.CartResponse;
+import com.pharmacy.orderservice.dto.NotificationRequest;
+import com.pharmacy.orderservice.dto.OrderItemResponse;
+import com.pharmacy.orderservice.dto.OrderRequest;
+import com.pharmacy.orderservice.dto.OrderResponse;
+import com.pharmacy.orderservice.dto.StockUpdateRequest;
+import com.pharmacy.orderservice.entity.Order;
+import com.pharmacy.orderservice.entity.OrderItem;
+import com.pharmacy.orderservice.entity.OrderStatus;
+import com.pharmacy.orderservice.exception.OrderNotFoundException;
+import com.pharmacy.orderservice.feign.CartClient;
+import com.pharmacy.orderservice.feign.InventoryClient;
+import com.pharmacy.orderservice.feign.NotificationClient;
+import com.pharmacy.orderservice.repository.OrderRepository;
+
+@Service
+public class OrderServiceImpl implements OrderService {
+
+    private final OrderRepository orderRepository;
+    private final CartClient cartClient;
+    private final InventoryClient inventoryClient;
+    private final NotificationClient notificationClient;
+
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            CartClient cartClient,
+                            InventoryClient inventoryClient,
+                            NotificationClient notificationClient) {
+        this.orderRepository = orderRepository;
+        this.cartClient = cartClient;
+        this.inventoryClient = inventoryClient;
+        this.notificationClient = notificationClient;
+    }
+
+    @Override
+    public OrderResponse placeOrder(OrderRequest orderRequest) {
+
+        CartResponse cartResponse = cartClient.getCartByCustomerId(orderRequest.getCustomerId());
+
+        if (cartResponse.getItems() == null || cartResponse.getItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty. Cannot place order.");
+        }
+
+        Order order = new Order();
+        order.setCustomerId(orderRequest.getCustomerId());
+        order.setTotalAmount(cartResponse.getGrandTotal());
+        order.setStatus(OrderStatus.PLACED);
+        order.setOrderDate(LocalDateTime.now());
+
+        for (CartItemResponse cartItem : cartResponse.getItems()) {
+
+            StockUpdateRequest stockUpdateRequest = new StockUpdateRequest(
+                    cartItem.getMedicineId(),
+                    cartItem.getQuantity()
+            );
+
+            inventoryClient.reduceStock(stockUpdateRequest);
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setMedicineId(cartItem.getMedicineId());
+            orderItem.setMedicineName(cartItem.getMedicineName());
+            orderItem.setPrice(cartItem.getPrice());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setTotalPrice(cartItem.getTotalPrice());
+            orderItem.setOrder(order);
+
+            order.getItems().add(orderItem);
+        }
+
+        Order savedOrder = orderRepository.save(order);
+
+        cartClient.clearCart(orderRequest.getCustomerId());
+
+        NotificationRequest notificationRequest = new NotificationRequest(
+                orderRequest.getCustomerId(),
+                "Your order has been placed successfully. Order ID: " + savedOrder.getId()
+        );
+
+        notificationClient.sendNotification(notificationRequest);
+
+        return mapToResponse(savedOrder);
+    }
+
+    @Override
+    public OrderResponse getOrderById(Long orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+        return mapToResponse(order);
+    }
+
+    @Override
+    public List<OrderResponse> getOrdersByCustomerId(Long customerId) {
+
+        return orderRepository.findByCustomerId(customerId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderResponse> getAllOrders() {
+
+        return orderRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+        order.setStatus(status);
+
+        Order updatedOrder = orderRepository.save(order);
+
+        NotificationRequest notificationRequest = new NotificationRequest(
+                order.getCustomerId(),
+                "Your order status has been updated to: " + status
+        );
+
+        notificationClient.sendNotification(notificationRequest);
+
+        return mapToResponse(updatedOrder);
+    }
+
+    @Override
+    public OrderResponse cancelOrder(Long orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getStatus() == OrderStatus.DELIVERED) {
+            throw new RuntimeException("Delivered order cannot be cancelled");
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+
+        Order cancelledOrder = orderRepository.save(order);
+
+        NotificationRequest notificationRequest = new NotificationRequest(
+                order.getCustomerId(),
+                "Your order has been cancelled. Order ID: " + order.getId()
+        );
+
+        notificationClient.sendNotification(notificationRequest);
+
+        return mapToResponse(cancelledOrder);
+    }
+
+    private OrderResponse mapToResponse(Order order) {
+
+        List<OrderItemResponse> itemResponses = order.getItems()
+                .stream()
+                .map(item -> new OrderItemResponse(
+                        item.getMedicineId(),
+                        item.getMedicineName(),
+                        item.getPrice(),
+                        item.getQuantity(),
+                        item.getTotalPrice()
+                ))
+                .collect(Collectors.toList());
+
+        return new OrderResponse(
+                order.getId(),
+                order.getCustomerId(),
+                itemResponses,
+                order.getTotalAmount(),
+                order.getStatus(),
+                order.getOrderDate()
+        );
+    }
+}

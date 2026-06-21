@@ -1,0 +1,92 @@
+package com.pharmacy.medicineservice.controller;
+
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.pharmacy.medicineservice.dto.MedicineRequest;
+import com.pharmacy.medicineservice.dto.MedicineResponse;
+import com.pharmacy.medicineservice.entity.MedicineCategory;
+import com.pharmacy.medicineservice.service.MedicineService;
+
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/medicines")
+
+@SecurityRequirement(name = "bearerAuth")
+
+public class MedicineController {
+
+    private final MedicineService medicineService;
+
+    public MedicineController(MedicineService medicineService) {
+        this.medicineService = medicineService;
+    }
+
+    @PostMapping
+    public ResponseEntity<MedicineResponse> addMedicine(@Valid @RequestBody MedicineRequest medicineRequest) {
+
+        MedicineResponse response = medicineService.addMedicine(medicineRequest);
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<MedicineResponse>> getAllMedicines() {
+
+        List<MedicineResponse> response = medicineService.getAllMedicines();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MedicineResponse> getMedicineById(@PathVariable Long id) {
+
+        MedicineResponse response = medicineService.getMedicineById(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/category/{category}")
+    public ResponseEntity<List<MedicineResponse>> getMedicinesByCategory(@PathVariable MedicineCategory category) {
+
+        List<MedicineResponse> response = medicineService.getMedicinesByCategory(category);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<MedicineResponse>> searchMedicinesByName(@RequestParam String name) {
+
+        List<MedicineResponse> response = medicineService.searchMedicinesByName(name);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MedicineResponse> updateMedicine(@PathVariable Long id,
+                                                           @Valid @RequestBody MedicineRequest medicineRequest) {
+
+        MedicineResponse response = medicineService.updateMedicine(id, medicineRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteMedicine(@PathVariable Long id) {
+
+        String response = medicineService.deleteMedicine(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> testMedicineService() {
+
+        return ResponseEntity.ok("Medicine Service is working successfully");
+    }
+}

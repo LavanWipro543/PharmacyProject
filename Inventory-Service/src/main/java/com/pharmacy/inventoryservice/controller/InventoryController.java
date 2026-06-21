@@ -1,0 +1,93 @@
+package com.pharmacy.inventoryservice.controller;
+
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.pharmacy.inventoryservice.dto.InventoryRequest;
+import com.pharmacy.inventoryservice.dto.InventoryResponse;
+import com.pharmacy.inventoryservice.dto.StockUpdateRequest;
+import com.pharmacy.inventoryservice.service.InventoryService;
+
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/inventory")
+
+@SecurityRequirement(name = "bearerAuth")
+
+public class InventoryController {
+
+    private final InventoryService inventoryService;
+
+    public InventoryController(InventoryService inventoryService) {
+        this.inventoryService = inventoryService;
+    }
+
+    @PostMapping
+    public ResponseEntity<InventoryResponse> addInventory(@Valid @RequestBody InventoryRequest inventoryRequest) {
+
+        InventoryResponse response = inventoryService.addInventory(inventoryRequest);
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<InventoryResponse>> getAllInventory() {
+
+        List<InventoryResponse> response = inventoryService.getAllInventory();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{medicineId}")
+    public ResponseEntity<InventoryResponse> getInventoryByMedicineId(@PathVariable Long medicineId) {
+
+        InventoryResponse response = inventoryService.getInventoryByMedicineId(medicineId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{medicineId}")
+    public ResponseEntity<InventoryResponse> updateInventory(@PathVariable Long medicineId,
+                                                             @Valid @RequestBody InventoryRequest inventoryRequest) {
+
+        InventoryResponse response = inventoryService.updateInventory(medicineId, inventoryRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/increase-stock")
+    public ResponseEntity<InventoryResponse> increaseStock(@Valid @RequestBody StockUpdateRequest stockUpdateRequest) {
+
+        InventoryResponse response = inventoryService.increaseStock(stockUpdateRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/reduce-stock")
+    public ResponseEntity<InventoryResponse> reduceStock(@Valid @RequestBody StockUpdateRequest stockUpdateRequest) {
+
+        InventoryResponse response = inventoryService.reduceStock(stockUpdateRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/check-stock")
+    public ResponseEntity<Boolean> checkStock(@RequestParam Long medicineId,
+                                              @RequestParam Integer quantity) {
+
+        Boolean response = inventoryService.checkStock(medicineId, quantity);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> testInventoryService() {
+
+        return ResponseEntity.ok("Inventory Service is working successfully");
+    }
+}
