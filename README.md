@@ -1,18 +1,121 @@
-# Online Pharmacy Management System - Backend
+# Online Pharmacy Management System
 
-A Spring Boot microservices-based backend project for an Online Pharmacy Management System. The system supports user authentication, role-based access control, medicine management, prescription management, inventory tracking, cart operations, order placement, notifications, API Gateway routing, Eureka service discovery, and Swagger-based API testing.
+A full-stack capstone project for an **Online Pharmacy Management System** built with a Spring Boot microservices backend and an Angular frontend. The backend is designed using API Gateway, Eureka Service Discovery, JWT authentication, role-based authorization, MySQL databases, Feign Client inter-service communication, and Swagger/OpenAPI API testing.
 
----
-
-## Project Type
-
-Backend-only microservices project.
-
-Testing is done using Swagger UI and API Gateway endpoints. No frontend is included in this repository.
+> **Current Status**
+>
+> - Backend: Completed and tested through Swagger/API Gateway.
+> - Frontend: Angular frontend structure and major pages are planned/in-progress. The frontend will consume only API Gateway endpoints.
 
 ---
 
-## Tech Stack
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Technology Stack](#technology-stack)
+- [Backend Microservices](#backend-microservices)
+- [Frontend Application](#frontend-application)
+- [Roles and Authorization](#roles-and-authorization)
+- [Database Setup](#database-setup)
+- [Service Startup Order](#service-startup-order)
+- [API Gateway Routes](#api-gateway-routes)
+- [Swagger URLs](#swagger-urls)
+- [Authentication JSON Examples](#authentication-json-examples)
+- [Core API Endpoints](#core-api-endpoints)
+- [Sample Request JSONs](#sample-request-jsons)
+- [Prescription-Based Medicine Flow](#prescription-based-medicine-flow)
+- [Inventory and Order Flow](#inventory-and-order-flow)
+- [Frontend Setup](#frontend-setup)
+- [Backend Setup](#backend-setup)
+- [Testing Guide](#testing-guide)
+- [Important Notes](#important-notes)
+- [Future Enhancements](#future-enhancements)
+
+---
+
+## Project Overview
+
+The **Online Pharmacy Management System** is designed to manage online pharmacy operations such as user registration, login, medicine management, prescription upload and approval, inventory management, cart management, order placement, and notifications.
+
+The project follows a microservices architecture where every service has a separate responsibility and database. The API Gateway acts as the central entry point for clients and performs JWT validation and role-based authorization.
+
+---
+
+## Key Features
+
+### Backend Features
+
+- User registration and login
+- JWT-based authentication
+- Role-based access control
+- API Gateway routing
+- Eureka service discovery
+- Centralized configuration support
+- Medicine CRUD operations
+- Prescription upload, approve, and reject workflow
+- Inventory stock and reorder level management
+- Cart management
+- Order placement
+- Stock reduction during order placement
+- Notification creation and viewing
+- Swagger/OpenAPI testing
+- Feign Client communication between services
+- Global exception handling
+
+### Frontend Features Planned / In Progress
+
+- Angular-based pharmacy portal
+- Public home page
+- Login and registration pages
+- Role-based dashboards
+- Admin dashboard
+- Customer dashboard
+- Pharmacist dashboard
+- Medicine listing and management
+- Inventory management page
+- Cart page
+- Orders page
+- Prescription upload page
+- Prescription approval/rejection page
+- Notifications page
+- Profile page
+- JWT interceptor
+- Role guard
+- Dynamic navbar and logout
+
+---
+
+## System Architecture
+
+```text
+Angular Frontend
+      |
+      v
+API Gateway : 8080
+      |
+      +--> AUTH-SERVICE : 8081
+      +--> MEDICINE-SERVICE : 8082
+      +--> PRESCRIPTION-SERVICE : 8083
+      +--> INVENTORY-SERVICE : 8084
+      +--> CART-SERVICE : 8085
+      +--> NOTIFICATION-SERVICE : 8086
+      +--> ORDER-SERVICE : 8087
+
+Supporting Services:
+
+CONFIG-SERVER : 8888
+EUREKA-SERVER : 8761
+```
+
+The frontend must call only API Gateway URLs on port `8080`. Direct service calls such as `8081`, `8082`, or `8083` should be avoided in the frontend because Gateway security and routing are bypassed.
+
+---
+
+## Technology Stack
+
+### Backend
 
 - Java 17
 - Spring Boot 3.2.5
@@ -21,21 +124,35 @@ Testing is done using Swagger UI and API Gateway endpoints. No frontend is inclu
 - Netflix Eureka Server
 - Spring Cloud Config Server
 - Spring Security
-- JWT Authentication
+- JWT
 - Spring Data JPA
+- Hibernate
 - MySQL
 - OpenFeign
 - Swagger / Springdoc OpenAPI
-- Lombok
 - Maven
+- Lombok
 - STS / Spring Tool Suite
+
+### Frontend
+
+- Angular
+- TypeScript
+- HTML
+- CSS
+- Bootstrap
+- Angular Routing
+- Angular Services
+- HTTP Interceptor
+- Route Guards
+- LocalStorage for JWT session data
 
 ---
 
-## Microservices
+## Backend Microservices
 
 ```text
-ONLINE-PHARMACY-SYSTEM
+online-pharmacy-system
 │
 ├── config-server
 ├── eureka-server
@@ -49,71 +166,154 @@ ONLINE-PHARMACY-SYSTEM
 └── notification-service
 ```
 
----
-
-## Service Ports
-
-| Service | Port | Description |
+| Service | Port | Responsibility |
 |---|---:|---|
-| Config Server | 8888 | Centralized configuration server |
-| Eureka Server | 8761 | Service discovery registry |
-| API Gateway | 8080 | Single entry point for all APIs |
-| Auth Service | 8081 | Registration, login, JWT generation |
+| Config Server | 8888 | Centralized configuration |
+| Eureka Server | 8761 | Service discovery and registration |
+| API Gateway | 8080 | Single entry point, routing, JWT validation, role checks |
+| Auth Service | 8081 | Register, login, JWT generation |
 | Medicine Service | 8082 | Medicine CRUD and search |
-| Prescription Service | 8083 | Prescription upload, approve, reject |
+| Prescription Service | 8083 | Upload, approve, reject prescriptions |
 | Inventory Service | 8084 | Stock and reorder level management |
 | Cart Service | 8085 | Customer cart management |
-| Notification Service | 8086 | Customer notification management |
-| Order Service | 8087 | Order placement and tracking |
+| Notification Service | 8086 | Notification management |
+| Order Service | 8087 | Order placement and order tracking |
 
 ---
 
-## Features
+## Frontend Application
 
-### Authentication and Authorization
-
-- User registration
-- User login
-- JWT token generation
-- Role-based authorization
-- API Gateway JWT validation
-
-### Roles
+The Angular frontend is intended to provide a professional pharmacy portal UI for different roles.
 
 ```text
-ADMIN
-CUSTOMER
-PHARMACIST
+online-pharmacy-frontend
+│
+├── src/app
+│   ├── core
+│   │   ├── guards
+│   │   ├── interceptors
+│   │   └── services
+│   │
+│   ├── pages
+│   │   ├── home
+│   │   ├── login
+│   │   ├── register
+│   │   ├── profile
+│   │   ├── medicines
+│   │   ├── inventory
+│   │   ├── cart
+│   │   ├── orders
+│   │   ├── prescriptions
+│   │   ├── notifications
+│   │   ├── admin
+│   │   │   ├── admin-dashboard
+│   │   │   └── all-orders
+│   │   ├── customer
+│   │   │   └── customer-dashboard
+│   │   └── pharmacist
+│   │       ├── pharmacist-dashboard
+│   │       └── prescription-management
+│   │
+│   └── shared
+│       ├── navbar
+│       └── footer
 ```
 
-### ADMIN Access
+### Frontend API Base URL
 
-- Full access to all APIs
-- Add, update, delete medicines
-- Manage inventory
-- View and manage orders
-- Access prescription and notification APIs
+```text
+http://localhost:8080
+```
 
-### CUSTOMER Access
+Example frontend service URL:
 
-- View medicines
-- Upload prescription
-- Add items to cart
-- Place order
-- View orders
-- View notifications
-
-### PHARMACIST Access
-
-- View prescriptions
-- Approve prescriptions
-- Reject prescriptions
+```ts
+private baseUrl = 'http://localhost:8080/auth-service/auth';
+```
 
 ---
 
-## Databases
+## Roles and Authorization
 
-Create the following MySQL databases before running services:
+### ADMIN
+
+- Full access to all APIs
+- Can manage medicines
+- Can manage inventory
+- Can view all orders
+- Can view/manage prescriptions
+- Can access admin dashboard
+
+### CUSTOMER
+
+- Can register and login
+- Can view medicines
+- Can upload prescriptions
+- Can add approved/OTC medicines to cart
+- Can place orders
+- Can view own orders
+- Can view notifications
+
+### PHARMACIST
+
+- Can register only with secret key
+- Can login
+- Can view prescriptions
+- Can approve prescriptions
+- Can reject prescriptions
+
+---
+
+## Privileged Registration Security
+
+To prevent unauthorized users from registering as ADMIN or PHARMACIST, privileged roles require a secret key.
+
+### Customer Registration
+
+No secret required.
+
+```json
+{
+  "name": "CustomerUser",
+  "email": "customer@gmail.com",
+  "password": "1234",
+  "role": "CUSTOMER"
+}
+```
+
+### Admin Registration
+
+Secret required.
+
+```json
+{
+  "name": "Admin",
+  "email": "admin@gmail.com",
+  "password": "1234",
+  "role": "ADMIN",
+  "adminSecret": "PHARMACY_ADMIN_2026"
+}
+```
+
+### Pharmacist Registration
+
+Secret required.
+
+```json
+{
+  "name": "PharmacistUser",
+  "email": "pharma@gmail.com",
+  "password": "1234",
+  "role": "PHARMACIST",
+  "adminSecret": "PHARMACY_ADMIN_2026"
+}
+```
+
+---
+
+## Database Setup
+
+Create these MySQL databases before starting services:
 
 ```sql
 CREATE DATABASE pharmacy_auth_db;
@@ -125,11 +325,13 @@ CREATE DATABASE pharmacy_order_db;
 CREATE DATABASE pharmacy_notification_db;
 ```
 
+Each microservice owns its own database.
+
 ---
 
 ## Service Startup Order
 
-Run the services in this order:
+Start services in this order:
 
 ```text
 1. config-server
@@ -142,31 +344,43 @@ Run the services in this order:
 8. notification-service
 9. order-service
 10. api-gateway
+11. angular frontend
 ```
 
 ---
 
-## Eureka Dashboard
+## API Gateway Routes
 
-After starting Eureka Server, open:
+All frontend calls should go through:
 
 ```text
-http://localhost:8761
+http://localhost:8080
 ```
 
-All services should be visible as registered instances.
+Example routes:
+
+```text
+/auth-service/auth/login
+/auth-service/auth/register
+/medicine-service/medicines
+/prescription-service/prescriptions
+/inventory-service/inventory
+/cart-service/cart/add
+/order-service/orders
+/notification-service/notifications
+```
 
 ---
 
 ## Swagger URLs
 
-### API Gateway Swagger
+### Gateway Swagger
 
 ```text
 http://localhost:8080/swagger-ui.html
 ```
 
-### Individual Service Swagger URLs
+### Individual Swagger URLs
 
 ```text
 Auth Service:          http://localhost:8081/swagger-ui.html
@@ -178,122 +392,73 @@ Notification Service:  http://localhost:8086/swagger-ui.html
 Order Service:         http://localhost:8087/swagger-ui.html
 ```
 
-For role-based access testing, use API Gateway URLs on port `8080`.
+For role-based testing, use only Gateway URLs on port `8080`.
 
 ---
 
-## API Gateway Base URL
+## Authentication JSON Examples
 
-```text
-http://localhost:8080
-```
-
-Example:
-
-```text
-http://localhost:8080/auth-service/auth/login
-http://localhost:8080/medicine-service/medicines
-http://localhost:8080/cart-service/cart/add
-http://localhost:8080/order-service/orders
-```
-
----
-
-## Authentication APIs
-
-### Register User
-
-```http
-POST /auth-service/auth/register
-```
-
-### Login User
-
-```http
-POST /auth-service/auth/login
-```
-
----
-
-## Register JSON Examples
-
-### ADMIN
+### Login as Admin
 
 ```json
 {
-  "name": "Admin",
   "email": "admin@gmail.com",
-  "password": "1234",
-  "role": "ADMIN"
+  "password": "1234"
 }
 ```
 
-### CUSTOMER
+### Login as Customer
 
 ```json
 {
+  "email": "customer@gmail.com",
+  "password": "1234"
+}
+```
+
+### Login as Pharmacist
+
+```json
+{
+  "email": "pharma@gmail.com",
+  "password": "1234"
+}
+```
+
+### Expected Login Response
+
+```json
+{
+  "token": "JWT_TOKEN",
+  "tokenType": "Bearer",
+  "userId": 1,
   "name": "CustomerUser",
   "email": "customer@gmail.com",
-  "password": "1234",
   "role": "CUSTOMER"
 }
 ```
 
-### PHARMACIST
-
-```json
-{
-  "name": "PharmacistUser",
-  "email": "pharma@gmail.com",
-  "password": "1234",
-  "role": "PHARMACIST"
-}
-```
-
----
-
-## Login JSON Examples
-
-### ADMIN Login
-
-```json
-{
-  "email": "admin@gmail.com",
-  "password": "1234"
-}
-```
-
-### CUSTOMER Login
-
-```json
-{
-  "email": "customer@gmail.com",
-  "password": "1234"
-}
-```
-
-### PHARMACIST Login
-
-```json
-{
-  "email": "pharma@gmail.com",
-  "password": "1234"
-}
-```
-
----
-
-## JWT Authorization Format
-
-After login, copy the JWT token and use it in Swagger/Postman as:
+The frontend stores these values in `localStorage`:
 
 ```text
-Authorization: Bearer YOUR_TOKEN_HERE
+token
+role
+email
+name
+customerId
 ```
 
 ---
 
-## Main APIs
+## Core API Endpoints
+
+### Auth Service
+
+```http
+POST /auth-service/auth/register
+POST /auth-service/auth/login
+GET  /auth-service/auth/test
+```
 
 ### Medicine Service
 
@@ -335,8 +500,8 @@ GET  /inventory-service/inventory/check-stock?medicineId=1&quantity=5
 ```http
 POST   /cart-service/cart/add
 PUT    /cart-service/cart/update
-DELETE /cart-service/cart/remove/{customerId}/{medicineId}
 GET    /cart-service/cart/{customerId}
+DELETE /cart-service/cart/remove/{customerId}/{medicineId}
 DELETE /cart-service/cart/clear/{customerId}
 ```
 
@@ -344,9 +509,9 @@ DELETE /cart-service/cart/clear/{customerId}
 
 ```http
 POST /order-service/orders
+GET  /order-service/orders
 GET  /order-service/orders/{orderId}
 GET  /order-service/orders/customer/{customerId}
-GET  /order-service/orders
 PUT  /order-service/orders/{orderId}/status/{status}
 PUT  /order-service/orders/{orderId}/cancel
 ```
@@ -403,11 +568,11 @@ GET  /notification-service/notifications
 {
   "customerId": 1,
   "doctorName": "Dr. Lavan",
-  "imageUrl": "lavan.png"
+  "imageUrl": "prescription.png"
 }
 ```
 
-### Add To Cart
+### Add to Cart
 
 ```json
 {
@@ -425,147 +590,227 @@ GET  /notification-service/notifications
 }
 ```
 
-### Send Notification
+---
+
+## Prescription-Based Medicine Flow
+
+### OTC Medicine
+
+```text
+Medicine prescriptionRequired = false
+        |
+        v
+Customer can add to cart directly
+        |
+        v
+Customer can place order
+```
+
+### Prescription Medicine
+
+```text
+Medicine prescriptionRequired = true
+        |
+        v
+Customer uploads prescription
+        |
+        v
+Prescription status = PENDING
+        |
+        v
+Pharmacist approves prescription
+        |
+        v
+Prescription status = APPROVED
+        |
+        v
+Customer can add medicine to cart
+        |
+        v
+Customer can place order
+```
+
+If prescription is not approved, Cart Service blocks adding prescription-required medicine to cart.
+
+---
+
+## Inventory and Order Flow
+
+```text
+Admin adds medicine
+        |
+        v
+Admin adds inventory using medicineId
+        |
+        v
+Customer adds medicine to cart
+        |
+        v
+Customer places order
+        |
+        v
+Order Service gets cart details
+        |
+        v
+Order Service reduces inventory stock
+        |
+        v
+Order Service clears cart
+        |
+        v
+Order Service sends notification
+```
+
+---
+
+## Frontend Setup
+
+Create Angular project:
+
+```bash
+ng new online-pharmacy-frontend --routing --style=css --standalone=false
+```
+
+Move into project:
+
+```bash
+cd online-pharmacy-frontend
+```
+
+Install Bootstrap:
+
+```bash
+npm install bootstrap
+```
+
+Add Bootstrap in `angular.json`:
 
 ```json
-{
-  "customerId": 1,
-  "message": "Order placed successfully"
-}
+"styles": [
+  "node_modules/bootstrap/dist/css/bootstrap.min.css",
+  "src/styles.css"
+]
+```
+
+Run frontend:
+
+```bash
+ng serve
+```
+
+Open:
+
+```text
+http://localhost:4200
 ```
 
 ---
 
-## Complete Demo Flow
+## Backend Setup
+
+Run each Spring Boot service from STS or terminal using Maven:
+
+```bash
+mvn spring-boot:run
+```
+
+Recommended run order:
 
 ```text
-1. Register ADMIN, CUSTOMER, and PHARMACIST.
-2. Login as ADMIN and copy JWT token.
-3. ADMIN adds medicines.
-4. ADMIN/PHARMACIST adds inventory using medicineId.
-5. CUSTOMER logs in and copies JWT token.
-6. CUSTOMER views medicines.
-7. CUSTOMER uploads prescription if required.
-8. PHARMACIST logs in and approves/rejects prescription.
-9. CUSTOMER adds medicine to cart.
-10. CUSTOMER places order.
-11. ORDER-SERVICE reduces inventory stock.
-12. ORDER-SERVICE clears cart.
-13. ORDER-SERVICE sends notification.
-14. CUSTOMER views order and notifications.
+config-server
+Eureka-server
+auth-service
+medicine-service
+prescription-service
+inventory-service
+cart-service
+notification-service
+order-service
+api-gateway
 ```
 
 ---
 
-## Role-Based Access Validation
+## Testing Guide
 
-### ADMIN
+### Register Users
 
-```text
-Can access all APIs.
-```
+Use Auth APIs through Gateway.
 
-### CUSTOMER Allowed
+### Login
 
-```text
-GET  /medicine-service/medicines
-POST /cart-service/cart/add
-POST /order-service/orders
-GET  /order-service/orders
-POST /prescription-service/prescriptions
-```
+Copy the JWT token from response.
 
-### CUSTOMER Blocked
+### Swagger Authorization
+
+Use:
 
 ```text
-POST   /medicine-service/medicines
-PUT    /medicine-service/medicines/{id}
-DELETE /medicine-service/medicines/{id}
-POST   /inventory-service/inventory
-PUT    /prescription-service/prescriptions/{id}/approve
+Bearer JWT_TOKEN
 ```
 
-### PHARMACIST Allowed
+### Role Testing
 
-```text
-All /prescription-service/prescriptions APIs
-```
-
-### PHARMACIST Blocked
-
-```text
-Medicine POST/PUT/DELETE
-Cart APIs
-Order APIs
-Inventory APIs if not allowed in Gateway filter
-```
-
----
-
-## Important Notes
-
-- API Gateway is the single entry point on port `8080`.
-- For role-based testing, always use Gateway URLs.
-- Direct service Swagger URLs may bypass Gateway authorization.
-- `medicineId` is the `id` generated by Medicine Service.
-- Inventory must be added separately after adding medicines.
-- `reorderLevel` is the minimum stock threshold for low-stock indication.
-- Use `localhost` consistently to avoid CORS issues.
-
----
-
-## Troubleshooting
-
-### CORS Issue
-
-Use Gateway URLs:
+Use Gateway endpoints only:
 
 ```text
 http://localhost:8080/<service-name>/...
 ```
 
-Avoid mixing:
+Do not use direct microservice ports for role-based testing.
 
-```text
-localhost
-192.168.x.x
-```
+---
 
-### Customer Can Delete Medicine
+## Important Notes
 
-Check if request is going through Gateway:
+- `medicineId` is generated by Medicine Service when medicine is added.
+- Inventory does not automatically get created when medicine is added.
+- Inventory must be added separately using `medicineId`.
+- `reorderLevel` is the minimum stock threshold.
+- API Gateway must handle CORS for Angular frontend.
+- Login and register APIs should not require JWT token.
+- Privileged roles such as ADMIN and PHARMACIST require `adminSecret`.
+- Customer self-registration does not require secret key.
+- Frontend should use only API Gateway URLs.
 
-```text
-Correct: http://localhost:8080/medicine-service/medicines/{id}
-Wrong:   http://localhost:8082/medicines/{id}
-```
+---
 
-### Feign Client Bean Not Found
+## Future Enhancements
 
-Add this annotation in the main application class:
-
-```java
-@EnableFeignClients
-```
-
-### Swagger Executes Direct Service Port
-
-Add `@Server(url = "/service-name")` in each service `OpenApiConfig.java`.
+- Complete Angular frontend with advanced UI polishing
+- Add real dashboard statistics
+- Add medicine update form
+- Add inventory update form
+- Add payment gateway integration
+- Add email/SMS notifications
+- Add Docker deployment
+- Add Kubernetes deployment
+- Add centralized logging
+- Add distributed tracing
+- Add audit logs
+- Add unit tests and integration tests
 
 ---
 
 ## Project Status
 
 ```text
-Backend microservices completed.
-Swagger testing supported.
-API Gateway routing supported.
-JWT authentication implemented.
-Role-based access implemented.
+Backend: Completed
+Frontend: In Progress / Future Enhancement
+Authentication: Completed
+JWT Authorization: Completed
+Swagger Testing: Completed
+Role-Based Access: Completed
+Prescription Approval Flow: Completed
+Inventory and Order Flow: Completed
 ```
 
 ---
 
 ## Author
 
-Online Pharmacy Management System - Backend Project
+```text
+NOMULA LAVAN REDDY
+Online Pharmacy Management System
+Backend Microservices + Angular Frontend Project
+```

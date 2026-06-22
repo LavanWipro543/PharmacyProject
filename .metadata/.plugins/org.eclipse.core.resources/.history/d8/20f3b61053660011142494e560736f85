@@ -1,0 +1,19 @@
+package com.neobank.gateway.security;
+
+import io.jsonwebtoken.*;
+import org.springframework.stereotype.Component;
+
+@Component
+public class JwtUtil {
+
+    private final String SECRET = "neobank-secret";
+
+    public String extractEmail(String token) {
+
+        return Jwts.parser()
+                .setSigningKey(SECRET)
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+}

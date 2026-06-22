@@ -1,0 +1,50 @@
+@Override
+protected void doFilterInternal(HttpServletRequest request,
+                                HttpServletResponse response,
+                                FilterChain filterChain)
+        throws ServletException, IOException {
+
+    String authHeader = request.getHeader("Authorization");
+
+    String token = null;
+    String email = null;
+    String role = null;
+
+    // ✅ Extract token safely
+    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+
+        token = authHeader.substring(7);
+
+        try {
+            email = jwtUtil.extractEmail(token);
+            role = jwtUtil.extractRole(token);
+
+            // ✅ VERY IMPORTANT
+            if (email == null || role == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+        } catch (Exception e) {
+            System.out.println("JWT error: " + e.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
+    }
+
+    // ✅ Set authentication only if valid
+    if (email != null && role != null &&
+        SecurityContextHolder.getContext().getAuthentication() == null) {
+
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(
+                        email,
+                        null,
+                        Collections.singleton(new SimpleGrantedAuthority(role))
+                );
+
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+    }
+
+    filterChain.doFilter(request, response);
+}

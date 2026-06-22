@@ -1,0 +1,5 @@
+package com.neobank.beneficiary.controller;
+
+public class BeneficiaryController {
+
+}

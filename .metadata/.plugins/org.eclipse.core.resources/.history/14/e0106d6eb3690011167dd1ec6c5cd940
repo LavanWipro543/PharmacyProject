@@ -1,0 +1,51 @@
+package com.neobank.account.service;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.repository.AccountRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class AccountService {
+
+    @Autowired
+    private AccountRepository repo;
+
+    public Account create(Account account) {
+
+        repo.findByEmail(account.getEmail()).ifPresent(a -> {
+            throw new RuntimeException("Email already exists");
+        });
+
+        return repo.save(account);
+    }
+
+    public List<Account> getAll() {
+        return repo.findAll();
+    }
+
+    public Account getById(Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+    }
+    public Account getAccountByEmail(String email) {
+        return repo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Account not found for email: " + email));
+    }
+    public Account update(Long id, Account updated) {
+
+        Account account = getById(id);
+
+        account.setName(updated.getName());
+        account.setEmail(updated.getEmail());
+        account.setBalance(updated.getBalance());
+
+        return repo.save(account);
+    }
+
+    public void delete(Long id) {
+        repo.delete(getById(id));
+    }
+}

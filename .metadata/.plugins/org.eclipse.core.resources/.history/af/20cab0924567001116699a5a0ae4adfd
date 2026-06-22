@@ -1,0 +1,27 @@
+package com.neobank.transaction.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "transactions")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Transaction {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String fromAccount;
+    private String toAccount;
+
+    private double amount;
+
+    private String type; // CREDIT / DEBIT / TRANSFER
+
+    private LocalDateTime timestamp;
+}

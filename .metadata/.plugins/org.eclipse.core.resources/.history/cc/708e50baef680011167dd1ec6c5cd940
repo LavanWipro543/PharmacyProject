@@ -1,0 +1,36 @@
+package com.neobank.account.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+
+@Table(name="accounts")
+
+public class Account {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "Name is required")
+    private String name;
+
+    @Email(message = "Invalid email")
+    @Column(unique = true)
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;  
+
+    @NotNull(message = "Balance required")
+    @Min(value = 0, message = "Balance must be >= 0")
+    private Double balance;
+    private String accountNumber;
+}

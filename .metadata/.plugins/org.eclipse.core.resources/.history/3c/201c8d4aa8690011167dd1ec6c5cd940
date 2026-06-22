@@ -1,0 +1,56 @@
+package com.neobank.beneficiary.controller;
+
+import com.neobank.beneficiary.entity.BenefeneficiaryService;
+import com.neobank.beneficiary.entity.Beneficiary;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/beneficiaries")
+public class BeneficiaryController {
+
+    @Autowired
+    private BeneficiaryService service;
+
+    // ✅ Add beneficiary for logged-in user
+    @PostMapping
+    public Beneficiary addBeneficiary(@RequestBody Beneficiary beneficiary) {
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        beneficiary.setUserEmail(email);
+
+        return service.add(beneficiary);
+    }
+
+    // ✅ Get only logged-in user's beneficiaries
+    @GetMapping("/my")
+    public List<Beneficiary> getMyBeneficiaries() {
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        return service.getByUser(email);
+    }
+
+    // ✅ Get beneficiary details by ID
+    @GetMapping("/details/{id}")
+    public Beneficiary getById(@PathVariable Long id) {
+        return service.getById(id);
+    }
+
+    // ✅ Delete beneficiary by ID
+    @DeleteMapping("/{id}")
+    public String deleteBeneficiary(@PathVariable Long id) {
+        return service.delete(id);
+    }
+}

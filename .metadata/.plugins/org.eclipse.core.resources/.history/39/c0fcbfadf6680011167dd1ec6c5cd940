@@ -1,0 +1,102 @@
+package com.neobank.account.controller;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.repository.AccountRepository;
+import com.neobank.account.service.AccountService;
+
+import jakarta.validation.Valid;
+import java.util.*;
+@RestController
+@RequestMapping("/accounts")
+@CrossOrigin(origins = "http://localhost:4200")
+public class AccountController {
+
+    @Autowired
+    private AccountRepository repo;
+
+    // ✅ CREATE FROM AUTH
+    @PostMapping("/create-from-user")
+    public Account createFromUser(@RequestBody Map<String, Object> data) {
+
+        Long userId = Long.valueOf(data.get("userId").toString());
+        String email = data.get("email").toString();
+        String name = data.get("name").toString();
+
+        Optional<Account> existing = repo.findByUserId(userId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        Account acc = new Account();
+        acc.setUserId(userId);
+        acc.setEmail(email);
+        acc.setName(name);
+        acc.setBalance(0.0);
+        acc.setAccountNumber(String.valueOf(System.currentTimeMillis()));
+
+        return repo.save(acc);
+    }
+
+    // ✅ GET LOGGED USER ACCOUNT
+    @GetMapping("/my-account")
+    public Map<String, Object> getMyAccount() {
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        Account acc = repo.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("accountNumber", acc.getAccountNumber());
+        map.put("balance", acc.getBalance());
+        map.put("email", acc.getEmail());
+        map.put("name", acc.getName());
+
+        return map;
+    }
+
+    // ✅ CREDIT
+    @PutMapping("/credit/{accountNumber}/{amount}")
+    public Map<String, Object> credit(@PathVariable String accountNumber,
+                                      @PathVariable double amount) {
+
+        Account acc = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        acc.setBalance(acc.getBalance() + amount);
+        repo.save(acc);
+
+        return success("Credited", acc.getBalance());
+    }
+
+    // ✅ DEBIT
+    @PutMapping("/debit/{accountNumber}/{amount}")
+    public Map<String, Object> debit(@PathVariable String accountNumber,
+                                     @PathVariable double amount) {
+
+        Account acc = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        if (acc.getBalance() < amount) {
+            throw new RuntimeException("Insufficient balance");
+        }
+
+        acc.setBalance(acc.getBalance() - amount);
+        repo.save(acc);
+
+        return success("Debited", acc.getBalance());
+    }
+
+    private Map<String, Object> success(String msg, double balance) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("message", msg);
+        map.put("balance", balance);
+        return map;
+    }
+}

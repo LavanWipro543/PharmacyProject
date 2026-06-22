@@ -1,0 +1,62 @@
+package com.neobank.account.controller;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.service.AccountService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/accounts")
+@CrossOrigin(origins = "http://localhost:4200")
+public class AccountController {
+
+    @Autowired
+    private AccountService accountService;
+
+    // Create account from auth service after register
+    @PostMapping("/create-from-user")
+    public Account createFromUser(@RequestBody Map<String, Object> data) {
+        return accountService.createAccountFromUser(data);
+    }
+
+    // Get logged-in user's account by email
+    @GetMapping("/email/{email}")
+    public Account getAccountByEmail(@PathVariable String email) {
+        String decodedEmail = URLDecoder.decode(email, StandardCharsets.UTF_8);
+        return accountService.getAccountByEmail(decodedEmail);
+    }
+
+    // Get account by user id
+    @GetMapping("/user/{userId}")
+    public Account getAccountByUserId(@PathVariable Long userId) {
+        return accountService.getAccountByUserId(userId);
+    }
+
+    // Credit amount
+    @PutMapping("/credit/{accountNumber}/{amount}")
+    public Map<String, Object> credit(
+            @PathVariable String accountNumber,
+            @PathVariable double amount
+    ) {
+        return accountService.credit(accountNumber, amount);
+    }
+
+    // Debit amount
+    @PutMapping("/debit/{accountNumber}/{amount}")
+    public Map<String, Object> debit(
+            @PathVariable String accountNumber,
+            @PathVariable double amount
+    ) {
+        return accountService.debit(accountNumber, amount);
+    }
+
+    // Delete account by user id
+    @DeleteMapping("/user/{userId}")
+    public Map<String, Object> deleteAccountByUserId(@PathVariable Long userId) {
+        return accountService.deleteAccountByUserId(userId);
+    }
+}

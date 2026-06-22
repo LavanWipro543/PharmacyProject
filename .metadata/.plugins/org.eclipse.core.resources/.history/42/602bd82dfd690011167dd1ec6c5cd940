@@ -1,0 +1,154 @@
+package com.neobank.account.service;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.repository.AccountRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+@Service
+public class AccountService {
+
+    @Autowired
+    private AccountRepository repo;
+
+    // Create account from auth service
+    public Account createAccountFromUser(Map<String, Object> data) {
+
+        if (data.get("userId") == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
+        }
+
+        if (data.get("email") == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email is required");
+        }
+
+        if (data.get("name") == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+        }
+
+        Long userId = Long.valueOf(data.get("userId").toString());
+        String email = data.get("email").toString().trim().toLowerCase();
+        String name = data.get("name").toString().trim();
+
+        Optional<Account> existingByUserId = repo.findByUserId(userId);
+        if (existingByUserId.isPresent()) {
+            return existingByUserId.get();
+        }
+
+        Optional<Account> existingByEmail = repo.findByEmailIgnoreCase(email);
+        if (existingByEmail.isPresent()) {
+            return existingByEmail.get();
+        }
+
+        Account account = new Account();
+        account.setUserId(userId);
+        account.setEmail(email);
+        account.setName(name);
+        account.setBalance(0.0);
+        account.setAccountNumber(generateAccountNumber());
+
+        return repo.save(account);
+    }
+
+    // Get account by email
+    public Account getAccountByEmail(String email) {
+
+        if (email == null || email.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        }
+
+        String cleanEmail = email.trim().toLowerCase();
+
+        return repo.findByEmailIgnoreCase(cleanEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account not found for email: " + cleanEmail
+                ));
+    }
+
+    // Get account by user id
+    public Account getAccountByUserId(Long userId) {
+        return repo.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account not found for userId: " + userId
+                ));
+    }
+
+    // Credit amount
+    public Map<String, Object> credit(String accountNumber, double amount) {
+
+        if (amount <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Amount must be greater than zero");
+        }
+
+        Account account = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account not found"
+                ));
+
+        account.setBalance(account.getBalance() + amount);
+        repo.save(account);
+
+        return success("Credited", account.getBalance());
+    }
+
+    // Debit amount
+    public Map<String, Object> debit(String accountNumber, double amount) {
+
+        if (amount <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Amount must be greater than zero");
+        }
+
+        Account account = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account not found"
+                ));
+
+        if (account.getBalance() < amount) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient balance");
+        }
+
+        account.setBalance(account.getBalance() - amount);
+        repo.save(account);
+
+        return success("Debited", account.getBalance());
+    }
+
+    // Delete account by user id
+    public Map<String, Object> deleteAccountByUserId(Long userId) {
+
+        Account account = repo.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account not found for userId: " + userId
+                ));
+
+        repo.delete(account);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Account deleted successfully");
+        response.put("userId", userId);
+
+        return response;
+    }
+
+    private Map<String, Object> success(String message, double balance) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", message);
+        response.put("balance", balance);
+        return response;
+    }
+
+    private String generateAccountNumber() {
+        return "NB" + System.currentTimeMillis();
+    }
+}

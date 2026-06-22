@@ -1,0 +1,149 @@
+package com.neobank.account.service;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.repository.AccountRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+@Service
+public class AccountService {
+
+    @Autowired
+    private AccountRepository repo;
+
+    // ✅ CREATE ACCOUNT FROM AUTH SERVICE
+    public Account createAccountFromUser(Map<String, Object> data) {
+
+        if (data.get("userId") == null) {
+            throw new RuntimeException("userId is required");
+        }
+
+        if (data.get("email") == null) {
+            throw new RuntimeException("email is required");
+        }
+
+        if (data.get("name") == null) {
+            throw new RuntimeException("name is required");
+        }
+
+        Long userId = Long.valueOf(data.get("userId").toString());
+        String email = data.get("email").toString();
+        String name = data.get("name").toString();
+
+        Optional<Account> existing = repo.findByUserId(userId);
+
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        Account account = new Account();
+
+        account.setUserId(userId);
+        account.setEmail(email);
+        account.setName(name);
+        account.setBalance(0.0);
+        account.setAccountNumber(String.valueOf(System.currentTimeMillis()));
+
+        return repo.save(account);
+    }
+
+    // ✅ GET LOGGED-IN USER ACCOUNT
+    public Map<String, Object> getMyAccount(String email) {
+
+        Account account = repo.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("id", account.getId());
+        response.put("userId", account.getUserId());
+        response.put("accountNumber", account.getAccountNumber());
+        response.put("balance", account.getBalance());
+        response.put("email", account.getEmail());
+        response.put("name", account.getName());
+
+        return response;
+    }
+
+    // ✅ GET ACCOUNT BY EMAIL
+    public Account getAccountByEmail(String email) {
+        return repo.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("Account not found for email: " + email));
+    }
+
+    // ✅ GET ACCOUNT BY USER ID
+    public Account getAccountByUserId(Long userId) {
+        return repo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Account not found for userId: " + userId));
+    }
+
+    // ✅ CREDIT AMOUNT
+    public Map<String, Object> credit(String accountNumber, double amount) {
+
+        if (amount <= 0) {
+            throw new RuntimeException("Amount must be greater than zero");
+        }
+
+        Account account = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        account.setBalance(account.getBalance() + amount);
+
+        repo.save(account);
+
+        return success("Credited", account.getBalance());
+    }
+
+    // ✅ DEBIT AMOUNT
+    public Map<String, Object> debit(String accountNumber, double amount) {
+
+        if (amount <= 0) {
+            throw new RuntimeException("Amount must be greater than zero");
+        }
+
+        Account account = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        if (account.getBalance() < amount) {
+            throw new RuntimeException("Insufficient balance");
+        }
+
+        account.setBalance(account.getBalance() - amount);
+
+        repo.save(account);
+
+        return success("Debited", account.getBalance());
+    }
+
+    // ✅ DELETE ACCOUNT BY USER ID
+    public Map<String, Object> deleteAccountByUserId(Long userId) {
+
+        Account account = repo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Account not found for userId: " + userId));
+
+        repo.delete(account);
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("message", "Account deleted successfully");
+        response.put("userId", userId);
+
+        return response;
+    }
+
+    // ✅ COMMON SUCCESS RESPONSE
+    private Map<String, Object> success(String message, double balance) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("message", message);
+        response.put("balance", balance);
+
+        return response;
+    }
+}

@@ -1,0 +1,206 @@
+package com.example.demo;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.repository.AccountRepository;
+import com.neobank.account.service.AccountService;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class AccountServiceTest {
+
+    @Mock
+    private AccountRepository repo;
+
+    @InjectMocks
+    private AccountService accountService;
+
+    private Account account;
+
+    @BeforeEach
+    void setup() {
+        account = new Account();
+
+        account.setId(1L);
+        account.setUserId(101L);
+        account.setName("Lavan");
+        account.setEmail("lavan@gmail.com");
+        account.setAccountNumber("NB123456");
+        account.setBalance(5000.0);
+
+    @Test
+    void testCreateAccountFromUserSuccess() {
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", 101L);
+        data.put("email", "lavan@gmail.com");
+        data.put("name", "Lavan");
+
+        when(repo.findByUserId(101L)).thenReturn(Optional.empty());
+        when(repo.findByEmailIgnoreCase("lavan@gmail.com")).thenReturn(Optional.empty());
+        when(repo.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Account result = accountService.createAccountFromUser(data);
+
+        assertNotNull(result);
+        assertEquals(101L, result.getUserId());
+        assertEquals("Lavan", result.getName());
+        assertEquals("lavan@gmail.com", result.getEmail());
+        assertEquals(0.0, result.getBalance());
+        assertNotNull(result.getAccountNumber());
+
+        verify(repo, times(1)).save(any(Account.class));
+    }
+
+    @Test
+    void testCreateAccountFromUserReturnsExistingAccount() {
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", 101L);
+        data.put("email", "lavan@gmail.com");
+        data.put("name", "Lavan");
+
+        when(repo.findByUserId(101L)).thenReturn(Optional.of(account));
+
+        Account result = accountService.createAccountFromUser(data);
+
+        assertNotNull(result);
+        assertEquals("NB123456", result.getAccountNumber());
+        assertEquals(5000.0, result.getBalance());
+
+        verify(repo, never()).save(any(Account.class));
+    }
+
+    @Test
+    void testCreateAccountFromUserMissingUserIdThrowsException() {
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("email", "lavan@gmail.com");
+        data.put("name", "Lavan");
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> accountService.createAccountFromUser(data)
+        );
+
+        verify(repo, never()).save(any(Account.class));
+    }
+
+    @Test
+    void testGetMyAccountSuccess() {
+
+        when(repo.findByEmailIgnoreCase("lavan@gmail.com")).thenReturn(Optional.of(account));
+
+        Map<String, Object> result = accountService.getMyAccount("lavan@gmail.com");
+
+        assertEquals(1L, result.get("id"));
+        assertEquals(101L, result.get("userId"));
+        assertEquals("Lavan", result.get("name"));
+        assertEquals("lavan@gmail.com", result.get("email"));
+        assertEquals("NB123456", result.get("accountNumber"));
+        assertEquals(5000.0, result.get("balance"));
+    }
+
+    @Test
+    void testGetMyAccountNotFoundThrowsException() {
+
+        when(repo.findByEmailIgnoreCase("unknown@gmail.com")).thenReturn(Optional.empty());
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> accountService.getMyAccount("unknown@gmail.com")
+        );
+    }
+
+    @Test
+    void testGetAccountByEmailSuccess() {
+
+        when(repo.findByEmailIgnoreCase("lavan@gmail.com")).thenReturn(Optional.of(account));
+
+        Account result = accountService.getAccountByEmail("lavan@gmail.com");
+
+        assertNotNull(result);
+        assertEquals("NB123456", result.getAccountNumber());
+        assertEquals("lavan@gmail.com", result.getEmail());
+    }
+
+    @Test
+    void testCreditSuccess() {
+
+        when(repo.findByAccountNumber("NB123456")).thenReturn(Optional.of(account));
+        when(repo.save(any(Account.class))).thenReturn(account);
+
+        Map<String, Object> response = accountService.credit("NB123456", 1000.0);
+
+        assertEquals("Credited successfully", response.get("message"));
+        assertEquals(6000.0, response.get("balance"));
+
+        verify(repo, times(1)).save(account);
+    }
+
+    @Test
+    void testCreditInvalidAmountThrowsException() {
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> accountService.credit("NB123456", 0.0)
+        );
+
+        verify(repo, never()).save(any(Account.class));
+    }
+
+    @Test
+    void testDebitSuccess() {
+
+        when(repo.findByAccountNumber("NB123456")).thenReturn(Optional.of(account));
+        when(repo.save(any(Account.class))).thenReturn(account);
+
+        Map<String, Object> response = accountService.debit("NB123456", 1000.0);
+
+        assertEquals("Debited successfully", response.get("message"));
+        assertEquals(4000.0, response.get("balance"));
+
+        verify(repo, times(1)).save(account);
+    }
+
+    @Test
+    void testDebitInsufficientBalanceThrowsException() {
+
+        when(repo.findByAccountNumber("NB123456")).thenReturn(Optional.of(account));
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> accountService.debit("NB123456", 10000.0)
+        );
+
+        verify(repo, never()).save(account);
+    }
+
+    @Test
+    void testDeleteAccountByUserIdSuccess() {
+
+        when(repo.findByUserId(101L)).thenReturn(Optional.of(account));
+
+        Map<String, Object> response = accountService.deleteAccountByUserId(101L);
+
+        assertEquals("Account deleted successfully", response.get("message"));
+        assertEquals(101L, response.get("userId"));
+
+        verify(repo, times(1)).delete(account);
+    }
+}

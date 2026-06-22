@@ -1,0 +1,5 @@
+package com.neobank.auth.config;
+
+public class WebConfig {
+
+}

@@ -1,0 +1,169 @@
+<div class="container mt-4">
+
+  <div class="card mb-4">
+
+    <div class="card-header bg-primary text-white">
+
+      Add Medicine
+
+    </div>
+
+    <div class="card-body">
+
+      <div class="row">
+
+        <div class="col-md-6 mb-3">
+
+          <input
+            class="form-control"
+            placeholder="Medicine Name"
+            [(ngModel)]="medicineData.name">
+
+        </div>
+
+        <div class="col-md-6 mb-3">
+
+          <input
+            class="form-control"
+            placeholder="Category"
+            [(ngModel)]="medicineData.category">
+
+        </div>
+
+      </div>
+
+      <div class="mb-3">
+
+        <textarea
+          class="form-control"
+          rows="3"
+          placeholder="Description"
+          [(ngModel)]="medicineData.description">
+        </textarea>
+
+      </div>
+
+      <div class="row">
+
+        <div class="col-md-6">
+
+          <input
+            type="number"
+            class="form-control"
+            placeholder="Price"
+            [(ngModel)]="medicineData.price">
+
+        </div>
+
+        <div class="col-md-6">
+
+          <select
+            class="form-select"
+            [(ngModel)]="medicineData.prescriptionRequired">
+
+            <option [ngValue]="false">
+              OTC Medicine
+            </option>
+
+            <option [ngValue]="true">
+              Prescription Required
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+      <button
+        class="btn btn-success mt-3"
+        (click)="addMedicine()">
+
+        Add Medicine
+
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="card">
+
+    <div class="card-header bg-dark text-white">
+
+      Medicine List
+
+    </div>
+
+    <div class="card-body">
+
+      <table class="table table-bordered">
+
+        <thead>
+
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Prescription</th>
+            <th>Action</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let medicine of medicines">
+
+            <td>{{medicine.id}}</td>
+
+            <td>{{medicine.name}}</td>
+
+            <td>{{medicine.price}}</td>
+
+            <td>{{medicine.category}}</td>
+
+            <td>
+
+              <span
+                class="badge bg-danger"
+                *ngIf="medicine.prescriptionRequired">
+
+                Required
+
+              </span>
+
+              <span
+                class="badge bg-success"
+                *ngIf="!medicine.prescriptionRequired">
+
+                Not Required
+
+              </span>
+
+            </td>
+
+            <td>
+
+              <button
+                class="btn btn-danger btn-sm"
+                (click)="deleteMedicine(medicine.id)">
+
+                Delete
+
+              </button>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

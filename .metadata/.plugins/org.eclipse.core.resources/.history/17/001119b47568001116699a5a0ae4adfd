@@ -1,0 +1,53 @@
+package com.neobank.auth.controller;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
+
+@CrossOrigin(origins = "http://localhost:4200")
+
+@RestController
+@RequestMapping("/admin")
+public class AdminController {
+
+    @Autowired
+    private UserRepository repo;
+
+    // ✅ Get all users
+    @GetMapping("/users")
+    public Object getUsers() {
+
+        String role = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getAuthorities()
+                .iterator().next().getAuthority();
+
+        if (!role.equals("ADMIN")) {
+            return "Access Denied";
+        }
+
+        return repo.findAll();
+    }
+
+    // ✅ DELETE USER
+    @DeleteMapping("/users/{id}")
+    public String delete(@PathVariable Long id) {
+
+        String role = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getAuthorities()
+                .iterator().next().getAuthority();
+
+        if (!role.equals("ADMIN")) {
+            return "Access Denied";
+        }
+
+        repo.deleteById(id);
+        return "User deleted";
+    }
+}

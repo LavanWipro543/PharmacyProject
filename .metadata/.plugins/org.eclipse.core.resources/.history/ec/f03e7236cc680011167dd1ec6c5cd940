@@ -1,0 +1,80 @@
+package com.neobank.auth.service;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.repository.UserRepository;
+import com.neobank.auth.security.JwtUtil;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class AuthService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private UserRepository repo;
+
+    @Autowired
+    private PasswordEncoder encoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    public String register(User user) {
+
+        // ✅ encrypt password
+        user.setPassword(encoder.encode(user.getPassword()));
+
+        // ✅ save user
+        repo.save(user);
+
+        try {
+            String url = "http://localhost:8081/accounts/create-from-user";
+            // ✅ ⚠️ CHANGE PORT HERE (VERY IMPORTANT)
+            // If your account service runs on 8081, keep 8081
+            // If 8080 → change accordingly
+
+            Map<String, String> req = new HashMap<>();
+            req.put("email", user.getEmail());
+            req.put("name", user.getName());
+
+            System.out.println("📤 Sending request to Account Service...");
+            System.out.println("URL: " + url);
+            System.out.println("DATA: " + req);
+
+            Object response = restTemplate.postForObject(url, req, Object.class);
+
+            System.out.println("✅ Account Service Response: " + response);
+            System.out.println("✅ Account created for: " + user.getEmail());
+
+        } catch (Exception e) {
+            System.out.println("❌ ERROR CALLING ACCOUNT SERVICE");
+            e.printStackTrace();   // ✅ VERY IMPORTANT
+        }
+
+        return "User Registered Successfully ✅";
+    }
+    // ✅ LOGIN
+    public String login(String email, String password) {
+
+        User user = repo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.isActive()) {
+            throw new RuntimeException("User is disabled");
+        }
+
+        if (!encoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        return jwtUtil.generateToken(user);
+    }
+}

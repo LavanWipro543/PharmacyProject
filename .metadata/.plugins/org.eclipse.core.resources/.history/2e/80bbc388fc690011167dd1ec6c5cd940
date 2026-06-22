@@ -1,0 +1,31 @@
+package com.neobank.account.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name="accounts")
+public class Account {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long userId; // ✅ ✅ ✅ MUST
+
+    private String name;
+
+    @Column(unique = true)
+    private String email;
+
+    private Double balance;
+
+    private String accountNumber;
+}

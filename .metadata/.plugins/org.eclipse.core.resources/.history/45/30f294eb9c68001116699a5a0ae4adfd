@@ -1,0 +1,54 @@
+package com.neobank.auth.service;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.repository.UserRepository;
+import com.neobank.auth.security.JwtUtil;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@Service
+public class AuthService {
+	@Autowired
+	private RestTemplate restTemplate;
+    @Autowired
+    private UserRepository repo;
+
+    @Autowired
+    private PasswordEncoder encoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    // ✅ REGISTER → ONLY CUSTOMER
+    public String register(User user) {
+
+        // ✅ force role
+        user.setRole("CUSTOMER");
+
+        user.setPassword(encoder.encode(user.getPassword()));
+        repo.save(user);
+
+        return "Customer Registered Successfully";
+    }
+
+    // ✅ LOGIN
+    public String login(String email, String password) {
+
+        User user = repo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.isActive()) {
+            throw new RuntimeException("User is disabled");
+        }
+
+        if (!encoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        // ✅ RETURN TOKEN WITH ROLE
+        return jwtUtil.generateToken(user);
+    }
+}

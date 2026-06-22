@@ -1,0 +1,45 @@
+package com.pharmacy.authservice.controller;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.pharmacy.authservice.dto.AuthResponse;
+import com.pharmacy.authservice.dto.LoginRequest;
+import com.pharmacy.authservice.dto.RegisterRequest;
+import com.pharmacy.authservice.service.AuthService;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest registerRequest) {
+
+        String response = authService.register(registerRequest);
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+
+        AuthResponse response = authService.login(loginRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> testAuthService() {
+
+        return ResponseEntity.ok("Auth Service is working successfully");
+    }
+}

@@ -1,0 +1,5 @@
+package com.pharmacy.medicineservice.exception;
+
+public class Globla {
+
+}

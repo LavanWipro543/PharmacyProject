@@ -1,0 +1,107 @@
+package com.neobank.account.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.repository.AccountRepository;
+import com.neobank.account.service.AccountService;
+
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@RestController
+@RequestMapping("/accounts")
+@CrossOrigin(origins = "*")
+public class AccountController {
+
+    @Autowired
+    private AccountRepository repo;
+
+    @Autowired
+    private AccountService service;
+
+    @PostMapping
+    public Account create(@Valid @RequestBody Account account) {
+        return service.create(account);
+    }
+
+    @GetMapping
+    public List<Account> getAll() {
+        return service.getAll();
+    }
+
+    @GetMapping("/{id}")
+    public Account getById(@PathVariable Long id) {
+        return service.getById(id);
+    }
+
+    @PutMapping("/{id}")
+    public Account update(@PathVariable Long id, @RequestBody Account account) {
+        return service.update(id, account);
+    }
+
+    @DeleteMapping("/{id}")
+    public String delete(@PathVariable Long id) {
+        service.delete(id);
+        return "Account deleted successfully";
+    }
+
+    // ✅ CREDIT
+    @PutMapping("/credit/{accountNumber}/{amount}")
+    public ResponseEntity<?> credit(@PathVariable String accountNumber, @PathVariable double amount) {
+
+        Account acc = repo.findByAccountNumber(accountNumber).orElse(null);
+
+        if (acc == null) {
+            return error(404, "Account not found");
+        }
+
+        acc.setBalance(acc.getBalance() + amount);
+        repo.save(acc);
+
+        return success("Balance Credited Successfully", acc.getBalance());
+    }
+
+    // ✅ DEBIT
+    @PutMapping("/debit/{accountNumber}/{amount}")
+    public ResponseEntity<?> debit(@PathVariable String accountNumber, @PathVariable double amount) {
+
+        Account acc = repo.findByAccountNumber(accountNumber).orElse(null);
+
+        if (acc == null) {
+            return error(404, "Account not found");
+        }
+
+        if (acc.getBalance() < amount) {
+            return error(400, "Insufficient balance");
+        }
+
+        acc.setBalance(acc.getBalance() - amount);
+        repo.save(acc);
+
+        return success("Balance Debited Successfully", acc.getBalance());
+    }
+
+    // ✅ COMMON RESPONSE METHODS
+    private ResponseEntity<Map<String, Object>> error(int status, String msg) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", status);
+        map.put("message", msg);
+        map.put("timestamp", java.time.LocalDateTime.now());
+        return ResponseEntity.status(status).body(map);
+    }
+
+    private ResponseEntity<Map<String, Object>> success(String msg, double balance) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", 200);
+        map.put("message", msg);
+        map.put("balance", balance);
+        map.put("timestamp", java.time.LocalDateTime.now());
+        return ResponseEntity.ok(map);
+    }
+}

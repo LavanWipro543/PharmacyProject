@@ -1,0 +1,5 @@
+package com.pharmacy.medicineservice.dto;
+
+public class MedicineRequest {
+
+}

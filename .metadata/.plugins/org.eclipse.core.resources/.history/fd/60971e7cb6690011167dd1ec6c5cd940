@@ -1,0 +1,148 @@
+package com.neobank.auth.controller;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/admin")
+public class AdminController {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    // ✅ Check logged-in user is ADMIN
+    private boolean isAdmin() {
+        var authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        if (authentication == null) {
+            return false;
+        }
+
+        return authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ADMIN") ||
+                        authority.getAuthority().equals("ROLE_ADMIN")
+                );
+    }
+
+    // ✅ Get all users
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        List<User> users = userRepository.findAll();
+
+        return ResponseEntity.ok(users);
+    }
+
+    // ✅ Get single user by ID
+    @GetMapping("/users/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(user);
+    }
+
+    // ✅ Activate / Deactivate user
+    @PutMapping("/users/{id}/status")
+    public ResponseEntity<?> updateUserStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> request
+    ) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Object activeValue = request.get("active");
+
+        if (activeValue == null) {
+            return ResponseEntity.badRequest().body("active value is required");
+        }
+
+        boolean active = Boolean.parseBoolean(activeValue.toString());
+
+        user.setActive(active);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("User status updated successfully");
+    }
+
+    // ✅ Change user role
+    @PutMapping("/users/{id}/role")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request
+    ) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String role = request.get("role");
+
+        if (role == null || role.isBlank()) {
+            return ResponseEntity.badRequest().body("role is required");
+        }
+
+        user.setRole(role.toUpperCase());
+        userRepository.save(user);
+
+        return ResponseEntity.ok("User role updated successfully");
+    }
+
+    // ✅ Delete user and related account
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // ✅ Delete account also only for CUSTOMER
+        if ("CUSTOMER".equalsIgnoreCase(user.getRole())) {
+            try {
+                restTemplate.delete("http://ACCOUNT-SERVICE/accounts/user/" + id);
+            } catch (Exception e) {
+                System.out.println("Account delete failed: " + e.getMessage());
+            }
+        }
+
+        userRepository.delete(user);
+
+        return ResponseEntity.ok("User and related account deleted successfully");
+    }
+}

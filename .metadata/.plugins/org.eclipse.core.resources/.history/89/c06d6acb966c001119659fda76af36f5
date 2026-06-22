@@ -1,0 +1,5 @@
+package com.pharmacy.medicineservice.repository;
+
+public class MedicineRepository {
+
+}

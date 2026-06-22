@@ -1,0 +1,53 @@
+package com.neobank.transaction.controller;
+
+import com.neobank.transaction.service.TransactionService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import com.neobank.transaction.entity.Transaction;
+import java.util.List;
+@RestController
+@RequestMapping("/transactions")
+//@CrossOrigin(origins = "http://localhost:4200")
+public class TransactionController {
+
+    @Autowired
+    private TransactionService service;
+
+    // ✅ DEPOSIT
+    @PostMapping("/deposit")
+    public String deposit(@RequestBody Map<String, Object> data) {
+
+        String accountNumber = data.get("accountNumber").toString();
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.deposit(accountNumber, amount);
+    }
+
+    // ✅ WITHDRAW
+    @PostMapping("/withdraw")
+    public String withdraw(@RequestBody Map<String, Object> data) {
+
+        String accountNumber = data.get("accountNumber").toString();
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.withdraw(accountNumber, amount);
+    }
+
+    // ✅ TRANSFER (DIRECT)
+    @PostMapping("/transfer")
+    public String transfer(@RequestBody Map<String, Object> data) {
+
+        String from = data.get("fromAccount").toString();
+        String to = data.get("toAccount").toString();
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.transfer(from, to, amount);
+    }
+    @GetMapping("/my")
+    public List<Transaction> getMyTransactions() {
+        return service.getMyTransactions();
+    }
+}

@@ -1,0 +1,140 @@
+package com.pharmacy.apigateway.filter;
+
+import java.nio.charset.StandardCharsets;
+import java.util.filter.GlobalFilter;import java.util.List;
+import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+
+import com.pharmacy.apigateway.util.JwtUtil;
+
+import reactor.core.publisher.Mono;
+
+@Component
+public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
+
+    private final JwtUtil jwtUtil;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+
+        if (isPublicEndpoint(path)) {
+            return chain.filter(exchange);
+        }
+
+        String authHeader = request.getHeaders().getFirst("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return unauthorized(exchange, "Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+
+        if (!jwtUtil.isTokenValid(token)) {
+            return unauthorized(exchange, "Invalid or expired JWT token");
+        }
+
+        String role = jwtUtil.extractRole(token);
+        String email = jwtUtil.extractEmail(token);
+
+        if (!isAuthorized(path, role)) {
+            return forbidden(exchange, "Access denied for role: " + role);
+        }
+
+        ServerHttpRequest modifiedRequest = request.mutate()
+                .header("X-User-Email", email)
+                .header("X-User-Role", role)
+                .build();
+
+        return chain.filter(exchange.mutate().request(modifiedRequest).build());
+    }
+
+    private boolean isPublicEndpoint(String path) {
+        return path.contains("/auth-service/auth/register")
+                || path.contains("/auth-service/auth/login")
+                || path.contains("/auth-service/auth/test")
+                || path.contains("/actuator")
+                || path.contains("/swagger-ui")
+                || path.contains("/v3/api-docs");
+    }
+
+    private boolean isAuthorized(String path, String role) {
+
+        if ("ADMIN".equals(role)) {
+            return true;
+        }
+
+        if ("CUSTOMER".equals(role)) {
+            return isCustomerAllowed(path);
+        }
+
+        if ("PHARMACIST".equals(role)) {
+            return isPharmacistAllowed(path);
+        }
+
+        return false;
+    }
+
+    private boolean isCustomerAllowed(String path) {
+        List<String> allowedPaths = List.of(
+                "/medicine-service/medicines",
+                "/prescription-service/prescriptions",
+                "/cart-service/cart",
+                "/order-service/orders",
+                "/notification-service/notifications"
+        );
+
+        return allowedPaths.stream().anyMatch(path::contains);
+    }
+
+    private boolean isPharmacistAllowed(String path) {
+        List<String> allowedPaths = List.of(
+                "/prescription-service/prescriptions",
+                "/inventory-service/inventory",
+                "/medicine-service/medicines"
+        );
+
+        return allowedPaths.stream().anyMatch(path::contains);
+    }
+
+    private Mono<Void> unauthorized(ServerWebExchange exchange, String message) {
+
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+
+        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
+
+        return exchange.getResponse()
+                .writeWith(Mono.just(exchange.getResponse()
+                        .bufferFactory()
+                        .wrap(bytes)));
+    }
+
+    private Mono<Void> forbidden(ServerWebExchange exchange, String message) {
+
+        exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+
+        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
+
+        return exchange.getResponse()
+                .writeWith(Mono.just(exchange.getResponse()
+                        .bufferFactory()
+                        .wrap(bytes)));
+    }
+
+    @Override
+    public int getOrder() {
+        return -1;
+    }
+}
+
+

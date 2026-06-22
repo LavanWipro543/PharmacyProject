@@ -1,0 +1,72 @@
+<div class="container mt-4">
+
+  <div class="card">
+
+    <div class="card-header bg-primary text-white">
+
+      Pending Prescriptions
+
+    </div>
+
+    <div class="card-body">
+
+      <table class="table table-bordered">
+
+        <thead>
+
+          <tr>
+            <th>ID</th>
+            <th>Customer ID</th>
+            <th>Doctor Name</th>
+            <th>Image URL</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let prescription of prescriptions">
+
+            <td>{{prescription.id}}</td>
+
+            <td>{{prescription.customerId}}</td>
+
+            <td>{{prescription.doctorName}}</td>
+
+            <td>{{prescription.imageUrl}}</td>
+
+            <td>{{prescription.status}}</td>
+
+            <td>
+
+              <button
+                class="btn btn-success btn-sm me-2"
+                (click)="approve(prescription.id)">
+
+                Approve
+
+              </button>
+
+              <button
+                class="btn btn-danger btn-sm"
+                (click)="reject(prescription.id)">
+
+                Reject
+
+              </button>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

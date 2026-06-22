@@ -1,0 +1,14 @@
+package com.pharmacy.cartservice.feign;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import com.pharmacy.cartservice.dto.MedicineResponse;
+
+@FeignClient(name = "MEDICINE-SERVICE")
+public interface MedicineClient {
+
+    @GetMapping("/medicines/{id}")
+    MedicineResponse getMedicineById(@PathVariable Long id);
+}

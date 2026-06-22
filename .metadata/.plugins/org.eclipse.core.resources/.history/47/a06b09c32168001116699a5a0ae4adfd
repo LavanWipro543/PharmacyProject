@@ -1,0 +1,5 @@
+package com.neobank.beneficiary.security;
+
+public class JwtUtil {
+
+}

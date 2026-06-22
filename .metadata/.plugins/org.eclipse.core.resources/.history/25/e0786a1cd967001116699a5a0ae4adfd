@@ -1,0 +1,5 @@
+package com.neobank.beneficiary.repository;
+
+public class BeneficiaryRepository {
+
+}

@@ -1,0 +1,5 @@
+package com.neobank.beneficiary.entity;
+
+public class Beneficiary {
+
+}

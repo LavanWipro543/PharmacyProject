@@ -1,0 +1,101 @@
+<div class="container mt-4">
+
+  <div class="card mb-4">
+
+    <div class="card-header bg-primary text-white">
+
+      Add Inventory
+
+    </div>
+
+    <div class="card-body">
+
+      <div class="row">
+
+        <div class="col-md-4">
+
+          <input
+            type="number"
+            class="form-control"
+            placeholder="Medicine Id"
+            [(ngModel)]="inventoryData.medicineId">
+
+        </div>
+
+        <div class="col-md-4">
+
+          <input
+            type="number"
+            class="form-control"
+            placeholder="Available Quantity"
+            [(ngModel)]="inventoryData.availableQuantity">
+
+        </div>
+
+        <div class="col-md-4">
+
+          <input
+            type="number"
+            class="form-control"
+            placeholder="Reorder Level"
+            [(ngModel)]="inventoryData.reorderLevel">
+
+        </div>
+
+      </div>
+
+      <button
+        class="btn btn-success mt-3"
+        (click)="addInventory()">
+
+        Add Inventory
+
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="card">
+
+    <div class="card-header bg-dark text-white">
+
+      Inventory List
+
+    </div>
+
+    <div class="card-body">
+
+      <table class="table table-bordered">
+
+        <thead>
+
+          <tr>
+            <th>Medicine ID</th>
+            <th>Quantity</th>
+            <th>Reorder Level</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let item of inventoryList">
+
+            <td>{{item.medicineId}}</td>
+
+            <td>{{item.availableQuantity}}</td>
+
+            <td>{{item.reorderLevel}}</td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

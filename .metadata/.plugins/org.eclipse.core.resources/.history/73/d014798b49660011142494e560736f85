@@ -1,0 +1,5 @@
+package com.neobank.account.exception;
+
+public class ResourceNotFoundException {
+
+}

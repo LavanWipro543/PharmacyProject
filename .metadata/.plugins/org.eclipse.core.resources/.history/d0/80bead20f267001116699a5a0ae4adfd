@@ -1,0 +1,114 @@
+package com.neobank.transaction.controller;
+
+import com.neobank.transaction.dto.StatementDTO;
+import com.neobank.transaction.entity.Transaction;
+import com.neobank.transaction.service.TransactionService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.*;
+
+@RestController
+@RequestMapping("/transactions")
+@CrossOrigin
+public class TransactionController {
+
+    @Autowired
+    private TransactionService service;
+
+    // ✅ HELPER → GET ROLE
+    private String getRole() {
+        return SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getAuthorities()
+                .iterator()
+                .next()
+                .getAuthority();
+    }
+
+    // ✅ DEPOSIT (CUSTOMER ONLY)
+    @PostMapping("/deposit")
+    public Object deposit(@RequestBody Map<String, Object> data) {
+
+        if (!getRole().equals("CUSTOMER")) {
+            return "Access Denied: Customer only";
+        }
+
+        String acc = (String) data.get("accountNumber");
+        double amount = ((Number) data.get("amount")).doubleValue();
+
+        return service.deposit(acc, amount);
+    }
+
+    // ✅ WITHDRAW (CUSTOMER ONLY)
+    @PostMapping("/withdraw")
+    public Object withdraw(@RequestBody Map<String, Object> data) {
+
+        if (!getRole().equals("CUSTOMER")) {
+            return "Access Denied: Customer only";
+        }
+
+        String acc = (String) data.get("accountNumber");
+        double amount = ((Number) data.get("amount")).doubleValue();
+
+        return service.withdraw(acc, amount);
+    }
+
+    // ✅ ✅ MAIN TRANSFER (CUSTOMER ONLY 🔥)
+    @PostMapping("/transfer-beneficiary")
+    public Object transferBeneficiary(@RequestBody Map<String, Object> data) {
+
+        if (!getRole().equals("CUSTOMER")) {
+            return "Access Denied: Customer only";
+        }
+
+        String from = (String) data.get("fromAccount");
+        Long beneficiaryId = Long.valueOf(data.get("beneficiaryId").toString());
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.transferUsingBeneficiary(from, beneficiaryId, amount);
+    }
+
+    // ✅ MINI STATEMENT (CUSTOMER ONLY)
+    @GetMapping("/mini/{accountNumber}")
+    public Object miniStatement(@PathVariable String accountNumber) {
+
+        if (!getRole().equals("CUSTOMER")) {
+            return "Access Denied: Customer only";
+        }
+
+        List<Transaction> list = service.getMiniStatement(accountNumber);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("accountNumber", accountNumber);
+        response.put("count", list.size());
+        response.put("transactions", list);
+
+        return response;
+    }
+
+    // ✅ FULL STATEMENT (CUSTOMER ONLY 🔥)
+    @GetMapping("/statement-detailed/{accountNumber}")
+    public Object fullStatement(@PathVariable String accountNumber) {
+
+        if (!getRole().equals("CUSTOMER")) {
+            return "Access Denied: Customer only";
+        }
+
+        return service.getFullStatement(accountNumber);
+    }
+
+    // ✅ ALL TRANSACTIONS
+    @GetMapping("/{accountNumber}")
+    public Object getTransactions(@PathVariable String accountNumber) {
+
+        if (!getRole().equals("CUSTOMER")) {
+            return "Access Denied: Customer only";
+        }
+
+        return service.getTransactions(accountNumber);
+    }
+}

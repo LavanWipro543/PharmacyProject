@@ -1,0 +1,5 @@
+package com.neobank.gateway.config;
+
+public class WebClientConfig {
+
+}

@@ -1,0 +1,27 @@
+package com.neobank.gateway.filter;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
+
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+
+        return http
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> {})
+                .authorizeExchange(exchange -> exchange
+                        .pathMatchers("/auth/**").permitAll()
+                        .pathMatchers("/accounts/**").permitAll()
+                        .pathMatchers("/transactions/**").permitAll()
+                        .pathMatchers("/beneficiaries/**").permitAll()
+                        .pathMatchers("/admin/**").permitAll()
+                        .anyExchange().permitAll()
+                )
+                .build();
+    }
+}

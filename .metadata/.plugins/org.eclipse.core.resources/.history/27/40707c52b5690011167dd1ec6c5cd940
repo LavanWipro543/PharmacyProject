@@ -1,0 +1,125 @@
+package com.neobank.auth.controller;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/admin")
+public class AdminController {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    private boolean isAdmin() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null) {
+            return false;
+        }
+
+        return authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ADMIN") ||
+                        authority.getAuthority().equals("ROLE_ADMIN")
+                );
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        List<User> users = userRepository.findAll();
+
+        return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/users/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(user);
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        userRepository.delete(user);
+
+        return ResponseEntity.ok("User deleted successfully");
+    }
+
+    @PutMapping("/users/{id}/status")
+    public ResponseEntity<?> updateUserStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> request
+    ) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Boolean active = request.get("active");
+
+        if (active == null) {
+            return ResponseEntity.badRequest().body("active value is required");
+        }
+
+        user.setActive(active);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("User status updated successfully");
+    } 
+
+    @PutMapping("/users/{id}/role")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request
+    ) {
+
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String role = request.get("role");
+
+        if (role == null || role.isBlank()) {
+            return ResponseEntity.badRequest().body("role is required");
+        }
+
+        user.setRole(role.toUpperCase());
+        userRepository.save(user);
+
+        return ResponseEntity.ok("User role updated successfully");
+    }
+}

@@ -1,0 +1,53 @@
+package com.neobank.gateway.filter;
+
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+import org.springframework.http.HttpStatus;
+
+@Component
+public class JwtFilter implements GlobalFilter {
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        String path = exchange.getRequest().getURI().getPath();
+
+        // ✅ Allow auth
+        if (path.contains("/auth/login") ||
+        	    path.contains("/auth/register") || 
+        	    path.contains("/auth/validate")) {
+        	    return chain.filter(exchange);
+        	}
+
+        String authHeader = exchange.getRequest()
+                .getHeaders()
+                .getFirst("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String token = authHeader.substring(7);
+
+        try {
+            // ✅ Call Auth Service to validate token
+            WebClient.create()
+                .get()
+                .uri("http://localhost:8081/auth/validate?token=" + token)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        } catch (Exception e) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        return chain.filter(exchange);
+    }
+}

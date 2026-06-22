@@ -1,0 +1,28 @@
+package com.neobank.auth.controller;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.service.AuthService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/auth")
+@CrossOrigin("*")
+public class AuthController {
+
+    @Autowired
+    private AuthService service;
+
+    // ✅ REGISTER
+    @PostMapping("/register")
+    public String register(@RequestBody User user) {
+        return service.register(user);
+    }
+
+    // ✅ LOGIN
+    @PostMapping("/login")
+    public String login(@RequestBody User user) {
+        return service.login(user.getEmail(), user.getPassword());
+    }
+}

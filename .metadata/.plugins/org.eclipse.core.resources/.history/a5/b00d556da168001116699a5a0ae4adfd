@@ -1,0 +1,76 @@
+package com.neobank.auth.service;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.repository.UserRepository;
+import com.neobank.auth.security.JwtUtil;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class AuthService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private UserRepository repo;
+
+    @Autowired
+    private PasswordEncoder encoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    public String register(User user) {
+
+        // ✅ encrypt password
+        user.setPassword(encoder.encode(user.getPassword()));
+
+        // ✅ save user
+        repo.save(user);
+
+        try {
+            // ✅ correct URL
+            String url = "http://localhost:8080/accounts/create-from-user";
+
+            // ✅ correct data mapping
+            Map<String, String> req = new HashMap<>();
+            req.put("email", user.getEmail());
+            req.put("name", user.getName());   // ✅ FIXED
+
+            restTemplate.postForObject(url, req, Object.class);
+
+            System.out.println("✅ Account created for user: " + user.getEmail());
+
+        } catch (Exception e) {
+            System.out.println("❌ Account service call failed: " + e.getMessage());
+        }
+
+        return "User Registered Successfully ✅";
+    }
+    
+
+    // ✅ ✅ ✅ LOGIN (NO CHANGE NEEDED)
+    public String login(String email, String password) {
+
+        User user = repo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.isActive()) {
+            throw new RuntimeException("User is disabled");
+        }
+
+        if (!encoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        // ✅ return JWT token
+        return jwtUtil.generateToken(user);
+    }
+}

@@ -1,0 +1,50 @@
+package com.neobank.auth.security;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Component;
+
+import com.neobank.auth.entity.User;
+
+import java.security.Key;
+import java.util.Date;
+
+@Component
+public class JwtUtil {
+
+    private final String SECRET = "neobank-secret-neobank-secret-123456";
+
+    private Key getSignKey() {
+        return Keys.hmacShaKeyFor(SECRET.getBytes());
+    }
+
+    // ✅ INCLUDE ROLE
+    public String generateToken(User user) {
+
+        return Jwts.builder()
+                .subject(user.getEmail())
+                .claim("role", user.getRole()) 
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .signWith(getSignKey())
+                .compact();
+    }
+
+    public String extractEmail(String token) {
+        return getClaims(token).getSubject();
+    }
+
+    // ✅ NEW METHOD (IMPORTANT)
+    public String extractRole(String token) {
+        return (String) getClaims(token).get("role");
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+}

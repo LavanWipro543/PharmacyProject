@@ -1,0 +1,64 @@
+<div class="container mt-4">
+
+  <div class="card">
+
+    <div class="card-header bg-primary text-white">
+      All Orders
+    </div>
+
+    <div class="card-body">
+
+      <div class="text-center p-4" *ngIf="loading">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2">Loading orders from database...</p>
+      </div>
+
+      <div class="alert alert-info" *ngIf="!loading && orders.length === 0">
+        No orders found in database.
+      </div>
+
+      <div class="table-responsive" *ngIf="!loading && orders.length > 0">
+
+        <table class="table table-bordered table-striped">
+
+          <thead class="table-dark">
+            <tr>
+              <th>Order ID</th>
+              <th>Customer ID</th>
+              <th>Total Amount</th>
+              <th>Status</th>
+              <th>Order Date</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr *ngFor="let order of orders">
+
+              <td>{{ getOrderId(order) }}</td>
+
+              <td>{{ getCustomerId(order) }}</td>
+
+              <td>₹ {{ getTotalAmount(order) }}</td>
+
+              <td>
+                <span class="badge bg-primary">
+                  {{ getStatus(order) }}
+                </span>
+              </td>
+
+              <td>{{ getOrderDate(order) }}</td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,6 +1,8 @@
 package com.pharmacy.authservice.service;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.beans.factory.annotation.Value;
+import com.pharmacy.authservice.entity.Role;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,6 +11,7 @@ import com.pharmacy.authservice.dto.AuthResponse;
 import com.pharmacy.authservice.dto.LoginRequest;
 import com.pharmacy.authservice.dto.RegisterRequest;
 import com.pharmacy.authservice.entity.User;
+import com.pharmacy.authservice.exception.InvalidAdminSecretException;
 import com.pharmacy.authservice.repository.UserRepository;
 import com.pharmacy.authservice.security.JwtUtil;
 
@@ -19,6 +22,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    @Value("${admin.registration.secret}")
+    private String adminRegistrationSecret;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
@@ -29,7 +34,6 @@ public class AuthServiceImpl implements AuthService {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
     }
-
     @Override
     public String register(RegisterRequest registerRequest) {
 
@@ -37,7 +41,19 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already registered");
         }
 
+        if (registerRequest.getRole() == Role.ADMIN ||
+        	    registerRequest.getRole() == Role.PHARMACIST) {
+
+        	    if (registerRequest.getAdminSecret() == null ||
+        	        !registerRequest.getAdminSecret().equals(adminRegistrationSecret)) {
+
+        	        throw new InvalidAdminSecretException(
+        	                "Invalid secret key. Registration denied.");
+        	    }
+        	}
+
         User user = new User();
+
         user.setName(registerRequest.getName());
         user.setEmail(registerRequest.getEmail());
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
@@ -47,7 +63,6 @@ public class AuthServiceImpl implements AuthService {
 
         return "User registered successfully with role: " + user.getRole();
     }
-
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
 

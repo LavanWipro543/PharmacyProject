@@ -1,0 +1,64 @@
+# ===============================
+# APPLICATION NAME
+# ===============================
+spring.application.name=neo-bank-api-gateway
+
+# ===============================
+# SERVER PORT
+# ===============================
+server.port=8080
+
+# ===============================
+# EUREKA CLIENT CONFIG
+# ===============================
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka/
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+
+# ===============================
+# API GATEWAY ROUTES
+# ===============================
+
+# Auth Service
+spring.cloud.gateway.routes[0].id=auth-service
+spring.cloud.gateway.routes[0].uri=lb://NEO-BANK-AUTH-SERVICE
+spring.cloud.gateway.routes[0].predicates[0]=Path=/auth/**
+
+# Account Service
+spring.cloud.gateway.routes[1].id=account-service
+spring.cloud.gateway.routes[1].uri=lb://NEO-BANK-ACCOUNT-SERVICE
+spring.cloud.gateway.routes[1].predicates[0]=Path=/accounts/**
+
+# Transaction Service
+spring.cloud.gateway.routes[2].id=transaction-service
+spring.cloud.gateway.routes[2].uri=lb://NEO-BANK-TRANSACTION-SERVICE
+spring.cloud.gateway.routes[2].predicates[0]=Path=/transactions/**
+
+# Beneficiary Service
+spring.cloud.gateway.routes[3].id=beneficiary-service
+spring.cloud.gateway.routes[3].uri=lb://NEO-BANK-BENEFICIARY-SERVICE
+spring.cloud.gateway.routes[3].predicates[0]=Path=/beneficiaries/**
+
+# Admin Service
+spring.cloud.gateway.routes[4].id=admin-service
+spring.cloud.gateway.routes[4].uri=lb://NEO-BANK-ADMIN-SERVICE
+spring.cloud.gateway.routes[4].predicates[0]=Path=/admin/**
+
+# ===============================
+# GLOBAL CORS CONFIG FOR ANGULAR
+# ===============================
+spring.cloud.gateway.globalcors.cors-configurations.[/**].allowedOrigins=http://localhost:4200
+spring.cloud.gateway.globalcors.cors-configurations.[/**].allowedMethods=GET,POST,PUT,DELETE,OPTIONS
+spring.cloud.gateway.globalcors.cors-configurations.[/**].allowedHeaders=*
+spring.cloud.gateway.globalcors.cors-configurations.[/**].allowCredentials=true
+
+# Important for OPTIONS preflight requests
+spring.cloud.gateway.globalcors.add-to-simple-url-handler-mapping=true
+
+# ===============================
+# DEBUG LOGGING
+# ===============================
+logging.level.org.springframework.cloud.gateway=DEBUG
+logging.level.reactor.netty.http.client=DEBUG
+logging.level.org.springframework.web.cors=DEBUG
+logging.level.org.springframework.security=DEBUG

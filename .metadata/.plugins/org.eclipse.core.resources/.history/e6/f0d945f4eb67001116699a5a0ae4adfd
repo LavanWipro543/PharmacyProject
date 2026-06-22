@@ -1,0 +1,205 @@
+package com.neobank.transaction.service;
+
+import com.neobank.transaction.dto.StatementDTO;
+import com.neobank.transaction.entity.Transaction;
+import com.neobank.transaction.repository.TransactionRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class TransactionService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private TransactionRepository repo;
+
+    // ✅ DEPOSIT
+    public String deposit(String accountNumber, double amount) {
+
+        try {
+            restTemplate.put(
+                    "http://ACCOUNT-SERVICE/accounts/credit/" + accountNumber + "/" + amount,
+                    null
+            );
+        } catch (HttpClientErrorException e) {
+            return "Deposit Failed: " + e.getResponseBodyAsString();
+        }
+
+        Transaction t = new Transaction();
+        t.setToAccount(accountNumber);
+        t.setAmount(amount);
+        t.setType("CREDIT");
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+
+        return "Deposited + Balance Updated";
+    }
+
+    // ✅ WITHDRAW
+    public String withdraw(String accountNumber, double amount) {
+
+        try {
+            restTemplate.put(
+                    "http://ACCOUNT-SERVICE/accounts/debit/" + accountNumber + "/" + amount,
+                    null
+            );
+        } catch (HttpClientErrorException e) {
+            return "Withdraw Failed: " + e.getResponseBodyAsString();
+        }
+
+        Transaction t = new Transaction();
+        t.setFromAccount(accountNumber);
+        t.setAmount(amount);
+        t.setType("DEBIT");
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+
+        return "Withdraw + Balance Updated";
+    }
+
+    // ✅ OLD TRANSFER (optional keep)
+    public String transfer(String from, String to, double amount) {
+
+        try {
+            restTemplate.put(
+                    "http://ACCOUNT-SERVICE/accounts/debit/" + from + "/" + amount,
+                    null
+            );
+
+            restTemplate.put(
+                    "http://ACCOUNT-SERVICE/accounts/credit/" + to + "/" + amount,
+                    null
+            );
+
+        } catch (HttpClientErrorException e) {
+            return "Transfer Failed: " + e.getResponseBodyAsString();
+        }
+
+        Transaction t = new Transaction();
+        t.setFromAccount(from);
+        t.setToAccount(to);
+        t.setAmount(amount);
+        t.setType("TRANSFER");
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+
+        return "Transfer Successful";
+    }
+
+    public String transferUsingBeneficiary(String fromAccount, Long beneficiaryId, double amount) {
+
+        try {
+            Map<String, Object> beneficiary = restTemplate.getForObject(
+                    "http://BENEFICIARY-SERVICE/beneficiaries/details/" + beneficiaryId,
+                    Map.class
+            );
+
+            if (beneficiary == null) {
+                return "Beneficiary not found";
+            }
+
+            String toAccount = (String) beneficiary.get("accountNumber");
+
+            restTemplate.put(
+                    "http://ACCOUNT-SERVICE/accounts/debit/" + fromAccount + "/" + amount,
+                    null
+            );
+
+            // ✅ 3. Credit receiver
+            restTemplate.put(
+                    "http://ACCOUNT-SERVICE/accounts/credit/" + toAccount + "/" + amount,
+                    null
+            );
+
+            // ✅ 4. Save transaction
+            Transaction t = new Transaction();
+            t.setFromAccount(fromAccount);
+            t.setToAccount(toAccount);
+            t.setAmount(amount);
+            t.setType("TRANSFER");
+            t.setTimestamp(LocalDateTime.now());
+
+            repo.save(t);
+
+            return "Transfer Successful via Beneficiary";
+
+        } catch (HttpClientErrorException e) {
+
+            return "Transfer Failed: " + e.getResponseBodyAsString();
+        }
+    }
+    public List<Transaction> getMiniStatement(String accountNumber) {
+
+        List<Transaction> all = getTransactions(accountNumber);
+
+        // ✅ Sort latest first
+        all.sort((t1, t2) -> t2.getTimestamp().compareTo(t1.getTimestamp()));
+
+        // ✅ Return last 5 transactions
+        return all.stream().limit(5).toList();
+    }
+    
+    public List<StatementDTO> getFullStatement(String accountNumber) {
+
+        List<Transaction> list = getTransactions(accountNumber);
+
+        // ✅ sort by date ascending (old → newest)
+        list.sort((t1, t2) -> t1.getTimestamp().compareTo(t2.getTimestamp()));
+
+        List<StatementDTO> result = new java.util.ArrayList<>();
+
+        double balance = 0;
+
+        for (Transaction t : list) {
+
+            // ✅ update running balance
+            if ("CREDIT".equalsIgnoreCase(t.getType()) || accountNumber.equals(t.getToAccount())) {
+                balance += t.getAmount();
+            } else {
+                balance -= t.getAmount();
+            }
+
+            // ✅ create row
+            StatementDTO dto = new StatementDTO();
+            dto.setDate(t.getTimestamp().toLocalDate().toString());
+            dto.setType(t.getType());
+            dto.setAmount(t.getAmount());
+            dto.setBalanceAfter(balance);
+
+            // ✅ description
+            if ("TRANSFER".equals(t.getType())) {
+                dto.setDescription("Transfer to " + t.getToAccount());
+            } else if ("CREDIT".equals(t.getType())) {
+                dto.setDescription("Amount Credited");
+            } else {
+                dto.setDescription("Amount Debited");
+            }
+
+            result.add(dto);
+        }
+
+        return result;
+    }
+    // ✅ GET HISTORY
+    public List<Transaction> getTransactions(String accountNumber) {
+
+        List<Transaction> sent = repo.findByFromAccount(accountNumber);
+        List<Transaction> received = repo.findByToAccount(accountNumber);
+
+        sent.addAll(received);
+
+        return sent;
+    }
+}

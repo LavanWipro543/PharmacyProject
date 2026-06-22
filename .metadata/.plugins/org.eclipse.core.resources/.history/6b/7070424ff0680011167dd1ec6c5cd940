@@ -1,0 +1,97 @@
+package com.neobank.transaction.service;
+
+import com.neobank.transaction.entity.Transaction;
+import com.neobank.transaction.repository.TransactionRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+
+@Service
+public class TransactionService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private TransactionRepository repo;
+
+    // ✅ CHANGE PORT if needed
+    private final String ACCOUNT_URL = "http://localhost:8081/accounts";
+
+    // ✅ DEPOSIT
+    public String deposit(String accountNumber, double amount) {
+
+        try {
+            restTemplate.put(
+                ACCOUNT_URL + "/credit/" + accountNumber + "/" + amount,
+                null
+            );
+
+            save("CREDIT", null, accountNumber, amount);
+
+            return "✅ Deposit Successful";
+
+        } catch (Exception e) {
+            return "❌ Deposit Failed";
+        }
+    }
+
+    // ✅ WITHDRAW
+    public String withdraw(String accountNumber, double amount) {
+
+        try {
+            restTemplate.put(
+                ACCOUNT_URL + "/debit/" + accountNumber + "/" + amount,
+                null
+            );
+
+            save("DEBIT", accountNumber, null, amount);
+
+            return "✅ Withdraw Successful";
+
+        } catch (Exception e) {
+            return "❌ Withdraw Failed (Check balance)";
+        }
+    }
+
+    // ✅ TRANSFER
+    public String transfer(String fromAccount, String toAccount, double amount) {
+
+        try {
+            // debit
+            restTemplate.put(
+                ACCOUNT_URL + "/debit/" + fromAccount + "/" + amount,
+                null
+            );
+
+            // credit
+            restTemplate.put(
+                ACCOUNT_URL + "/credit/" + toAccount + "/" + amount,
+                null
+            );
+
+            save("TRANSFER", fromAccount, toAccount, amount);
+
+            return "✅ Transfer Successful";
+
+        } catch (Exception e) {
+            return "❌ Transfer Failed";
+        }
+    }
+
+    // ✅ SAVE TRANSACTION
+    private void save(String type, String from, String to, double amount) {
+
+        Transaction t = new Transaction();
+        t.setType(type);
+        t.setFromAccount(from);
+        t.setToAccount(to);
+        t.setAmount(amount);
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+    }
+}

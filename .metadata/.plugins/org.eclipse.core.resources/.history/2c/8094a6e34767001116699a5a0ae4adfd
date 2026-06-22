@@ -1,0 +1,83 @@
+package com.neobank.transaction.service;
+
+import com.neobank.transaction.entity.Transaction;
+import com.neobank.transaction.repository.TransactionRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class TransactionService {
+
+
+    @Autowired
+     private RestTemplate restTemplate;
+
+    @Autowired
+    private TransactionRepository repo;
+
+    public String deposit(String accountNumber, double amount) {
+
+        // ✅ call account service
+        restTemplate.put(
+            "http://ACCOUNT-SERVICE/accounts/credit/" + accountNumber + "/" + amount,
+            null
+        );
+
+        // ✅ save transaction
+        Transaction t = new Transaction();
+        t.setToAccount(accountNumber);
+        t.setAmount(amount);
+        t.setType("CREDIT");
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+
+        return "Deposited + Balance Updated";
+    }
+
+    // ✅ Withdraw
+    public String withdraw(String accountNumber, double amount) {
+
+        Transaction t = new Transaction();
+        t.setFromAccount(accountNumber);
+        t.setToAccount(null);
+        t.setAmount(amount);
+        t.setType("DEBIT");
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+
+        return "Amount Debited Successfully";
+    }
+
+    // ✅ Transfer
+    public String transfer(String from, String to, double amount) {
+
+        Transaction t = new Transaction();
+        t.setFromAccount(from);
+        t.setToAccount(to);
+        t.setAmount(amount);
+        t.setType("TRANSFER");
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+
+        return "Transfer Successful";
+    }
+
+    // ✅ Get History
+    public List<Transaction> getTransactions(String accountNumber) {
+
+        List<Transaction> sent = repo.findByFromAccount(accountNumber);
+        List<Transaction> received = repo.findByToAccount(accountNumber);
+
+        sent.addAll(received);
+
+        return sent;
+    }
+}

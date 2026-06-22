@@ -1,0 +1,5 @@
+package com.pharmacy.apigateway.util;
+
+public class JwtUtil {
+
+}

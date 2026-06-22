@@ -1,0 +1,63 @@
+package com.neobank.auth.service;
+
+import com.neobank.auth.entity.User;
+import com.neobank.auth.repository.UserRepository;
+import com.neobank.auth.security.JwtUtil;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class AuthService {
+
+    @Autowired
+    private UserRepository repo;
+
+    @Autowired
+    private PasswordEncoder encoder;
+
+    @Autowired
+    private JwtUtil jwt;
+
+    @Autowired
+    private RestTemplate rest;
+
+    public String register(User user) {
+
+        user.setPassword(encoder.encode(user.getPassword()));
+        repo.save(user);
+
+        try {
+            Map<String, String> req = new HashMap<>();
+            req.put("email", user.getEmail());
+            req.put("name", user.getName());
+
+            rest.postForObject(
+                "http://localhost:8081/accounts/create-from-user",
+                req,
+                Object.class
+            );
+
+        } catch (Exception e) {
+            System.out.println("Account creation failed: " + e.getMessage());
+        }
+
+        return "Registered ✅";
+    }
+
+    public String login(String email, String password) {
+
+        User u = repo.findByEmail(email).get();
+
+        if (!encoder.matches(password, u.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        return jwt.generateToken(u);
+    }
+}

@@ -1,0 +1,5 @@
+package com.neobank.auth.security;
+
+public class CorsConfig {
+
+}

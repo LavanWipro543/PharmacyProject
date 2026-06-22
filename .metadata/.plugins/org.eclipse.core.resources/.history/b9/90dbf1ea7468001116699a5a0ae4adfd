@@ -1,0 +1,5 @@
+package com.neobank.gateway.security;
+
+public class GateWayConfig {
+
+}

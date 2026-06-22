@@ -1,0 +1,275 @@
+package com.neobank.transaction.service;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+import com.lowagie.text.Document;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.neobank.transaction.entity.Transaction;
+import com.neobank.transaction.repository.TransactionRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.awt.Color;
+import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class TransactionService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private TransactionRepository repo;
+
+    private final String ACCOUNT_URL = "http://ACCOUNT-SERVICE/accounts";
+
+    public String deposit(String accountNumber, double amount) {
+
+        String email = getLoggedInEmail();
+
+        try {
+            HttpEntity<String> entity = new HttpEntity<>(getAuthHeaders());
+
+            restTemplate.exchange(
+                    ACCOUNT_URL + "/credit/" + accountNumber + "/" + amount,
+                    HttpMethod.PUT,
+                    entity,
+                    String.class
+            );
+
+            save("CREDIT", null, accountNumber, amount, "SUCCESS", email);
+
+            return "Deposit Successful";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            save("CREDIT", null, accountNumber, amount, "FAILED", email);
+
+            return "Deposit Failed";
+        }
+    }
+
+    public String withdraw(String accountNumber, double amount) {
+
+        String email = getLoggedInEmail();
+
+        try {
+            HttpEntity<String> entity = new HttpEntity<>(getAuthHeaders());
+
+            restTemplate.exchange(
+                    ACCOUNT_URL + "/debit/" + accountNumber + "/" + amount,
+                    HttpMethod.PUT,
+                    entity,
+                    String.class
+            );
+
+            save("DEBIT", accountNumber, null, amount, "SUCCESS", email);
+
+            return "Withdraw Successful";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            save("DEBIT", accountNumber, null, amount, "FAILED", email);
+
+            return "Withdraw Failed";
+        }
+    }
+
+    public String transfer(String fromAccount, String toAccount, double amount) {
+
+        String email = getLoggedInEmail();
+
+        try {
+            HttpEntity<String> entity = new HttpEntity<>(getAuthHeaders());
+
+            restTemplate.exchange(
+                    ACCOUNT_URL + "/debit/" + fromAccount + "/" + amount,
+                    HttpMethod.PUT,
+                    entity,
+                    String.class
+            );
+
+            try {
+                restTemplate.exchange(
+                        ACCOUNT_URL + "/credit/" + toAccount + "/" + amount,
+                        HttpMethod.PUT,
+                        entity,
+                        String.class
+                );
+
+                save("TRANSFER", fromAccount, toAccount, amount, "SUCCESS", email);
+
+                return "Transfer Successful";
+
+            } catch (Exception creditFail) {
+                creditFail.printStackTrace();
+
+                restTemplate.exchange(
+                        ACCOUNT_URL + "/credit/" + fromAccount + "/" + amount,
+                        HttpMethod.PUT,
+                        entity,
+                        String.class
+                );
+
+                save("TRANSFER", fromAccount, toAccount, amount, "FAILED", email);
+
+                return "Transfer Failed. Rollback Done";
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            save("TRANSFER", fromAccount, toAccount, amount, "FAILED", email);
+
+            return "Transfer Failed. Debit Issue";
+        }
+    }
+
+    public List<Transaction> getMyTransactions() {
+
+        String email = getLoggedInEmail();
+
+        return repo.findByEmailOrderByTimestampDesc(email);
+    }
+
+    public byte[] generateMyStatementPdf() {
+
+        String email = getLoggedInEmail();
+
+        List<Transaction> transactions = repo.findByEmailOrderByTimestampDesc(email);
+
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            Document document = new Document(PageSize.A4.rotate());
+            PdfWriter.getInstance(document, outputStream);
+
+            document.open();
+
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, Color.BLACK);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 11, Color.BLACK);
+            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.WHITE);
+
+            Paragraph title = new Paragraph("NeoBank Account Statement", titleFont);
+            title.setAlignment(Paragraph.ALIGN_CENTER);
+            title.setSpacingAfter(15);
+            document.add(title);
+
+            Paragraph customerInfo = new Paragraph("Customer Email: " + email, normalFont);
+            customerInfo.setSpacingAfter(5);
+            document.add(customerInfo);
+
+            Paragraph generatedAt = new Paragraph("Generated At: " + LocalDateTime.now(), normalFont);
+            generatedAt.setSpacingAfter(15);
+            document.add(generatedAt);
+
+            PdfPTable table = new PdfPTable(7);
+            table.setWidthPercentage(100);
+            table.setWidths(new float[]{1.2f, 2f, 3f, 3f, 2f, 2f, 4f});
+
+            addHeaderCell(table, "ID", headerFont);
+            addHeaderCell(table, "Type", headerFont);
+            addHeaderCell(table, "From Account", headerFont);
+            addHeaderCell(table, "To Account", headerFont);
+            addHeaderCell(table, "Amount", headerFont);
+            addHeaderCell(table, "Status", headerFont);
+            addHeaderCell(table, "Date & Time", headerFont);
+
+            for (Transaction transaction : transactions) {
+                table.addCell(String.valueOf(transaction.getId()));
+                table.addCell(valueOrDash(transaction.getType()));
+                table.addCell(valueOrDash(transaction.getFromAccount()));
+                table.addCell(valueOrDash(transaction.getToAccount()));
+                table.addCell(String.valueOf(transaction.getAmount()));
+                table.addCell(valueOrDash(transaction.getStatus()));
+                table.addCell(String.valueOf(transaction.getTimestamp()));
+            }
+
+            document.add(table);
+
+            document.close();
+
+            return outputStream.toByteArray();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to generate PDF statement");
+        }
+    }
+
+    private void addHeaderCell(PdfPTable table, String text, Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setBackgroundColor(new Color(30, 64, 175));
+        cell.setPadding(8);
+        table.addCell(cell);
+    }
+
+    private String valueOrDash(String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+
+        return value;
+    }
+
+    private HttpHeaders getAuthHeaders() {
+
+        HttpHeaders headers = new HttpHeaders();
+
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (attributes != null) {
+            HttpServletRequest request = attributes.getRequest();
+
+            String authHeader = request.getHeader("Authorization");
+
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                headers.set("Authorization", authHeader);
+            }
+        }
+
+        return headers;
+    }
+
+    private String getLoggedInEmail() {
+        return SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+    }
+
+    private void save(String type, String from, String to, double amount, String status, String email) {
+
+        Transaction transaction = new Transaction();
+
+        transaction.setType(type);
+        transaction.setFromAccount(from);
+        transaction.setToAccount(to);
+        transaction.setAmount(amount);
+        transaction.setStatus(status);
+        transaction.setEmail(email);
+        transaction.setTimestamp(LocalDateTime.now());
+
+        repo.save(transaction);
+    }
+}
+
+

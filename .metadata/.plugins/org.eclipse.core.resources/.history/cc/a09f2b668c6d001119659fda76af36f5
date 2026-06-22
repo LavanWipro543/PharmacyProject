@@ -1,0 +1,68 @@
+package com.pharmacy.cartservice.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.pharmacy.cartservice.dto.CartRequest;
+import com.pharmacy.cartservice.dto.CartResponse;
+import com.pharmacy.cartservice.service.CartService;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/cart")
+public class CartController {
+
+    private final CartService cartService;
+
+    public CartController(CartService cartService) {
+        this.cartService = cartService;
+    }
+
+    @PostMapping("/add")
+    public ResponseEntity<CartResponse> addToCart(@Valid @RequestBody CartRequest cartRequest) {
+
+        CartResponse response = cartService.addToCart(cartRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<CartResponse> updateCartItem(@Valid @RequestBody CartRequest cartRequest) {
+
+        CartResponse response = cartService.updateCartItem(cartRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/remove/{customerId}/{medicineId}")
+    public ResponseEntity<String> removeFromCart(@PathVariable Long customerId,
+                                                 @PathVariable Long medicineId) {
+
+        String response = cartService.removeFromCart(customerId, medicineId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{customerId}")
+    public ResponseEntity<CartResponse> getCartByCustomerId(@PathVariable Long customerId) {
+
+        CartResponse response = cartService.getCartByCustomerId(customerId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/clear/{customerId}")
+    public ResponseEntity<String> clearCart(@PathVariable Long customerId) {
+
+        String response = cartService.clearCart(customerId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> testCartService() {
+
+        return ResponseEntity.ok("Cart Service is working successfully");
+    }
+}

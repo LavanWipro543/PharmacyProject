@@ -1,0 +1,76 @@
+package com.neobank.transaction.controller;
+
+import com.neobank.transaction.entity.Transaction;
+import web.bind.annotation.RequestMapping;
+import com.neobank.transaction.service.TransactionService;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/transactions")
+public class TransactionController {
+
+    @Autowired
+    private TransactionService service;
+
+    // ✅ DEPOSIT
+    @PostMapping("/deposit")
+    public String deposit(@RequestBody Map<String, Object> data) {
+
+        String accountNumber = data.get("accountNumber").toString();
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.deposit(accountNumber, amount);
+    }
+
+    // ✅ WITHDRAW
+    @PostMapping("/withdraw")
+    public String withdraw(@RequestBody Map<String, Object> data) {
+
+        String accountNumber = data.get("accountNumber").toString();
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.withdraw(accountNumber, amount);
+    }
+
+    // ✅ TRANSFER
+    @PostMapping("/transfer")
+    public String transfer(@RequestBody Map<String, Object> data) {
+
+        String fromAccount = data.get("fromAccount").toString();
+        String toAccount = data.get("toAccount").toString();
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.transfer(fromAccount, toAccount, amount);
+    }
+
+    // ✅ GET LOGGED-IN USER TRANSACTIONS
+    @GetMapping("/my")
+    public List<Transaction> getMyTransactions() {
+        return service.getMyTransactions();
+    }
+
+    // ✅ DOWNLOAD PDF STATEMENT
+    @GetMapping("/statement/pdf")
+    public ResponseEntity<byte[]> downloadStatementPdf() {
+
+        byte[] pdfBytes = service.generateMyStatementPdf();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=NeoBank_Statement.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
+}
+
+

@@ -1,0 +1,115 @@
+package com.neobank.account.controller;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.neobank.account.entity.Account;
+import com.neobank.account.repository.AccountRepository;
+import com.neobank.account.service.AccountService;
+
+import jakarta.validation.Valid;
+import java.util.*;
+
+@RestController
+@RequestMapping("/accounts")
+public class AccountController {
+
+    @Autowired
+    private AccountRepository repo;
+
+    @Autowired
+    private AccountService service;
+
+    // ✅ CREATE ACCOUNT (manual)
+    @PostMapping
+    public Account create(@Valid @RequestBody Account account) {
+        return service.create(account);
+    }
+
+    // ✅ CREATE ACCOUNT FROM AUTH SERVICE (IMPORTANT 🔥)
+    @PostMapping("/create-from-user")
+    public Account createFromUser(@RequestBody Map<String, String> data) {
+
+        String email = data.get("email");
+        String name = data.get("name");
+
+        // ✅ check already exists
+        Optional<Account> existing = repo.findByEmailIgnoreCase(email);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        Account acc = new Account();
+        acc.setEmail(email);
+        acc.setName(name);
+        acc.setBalance(0.0);
+
+        // ✅ generate account number
+        acc.setAccountNumber(String.valueOf(System.currentTimeMillis()));
+
+        return repo.save(acc);
+    }
+
+    // ✅ GET CURRENT USER ACCOUNT (MAIN FIX ✅)
+    @GetMapping("/my-account")
+    public Map<String, Object> getMyAccount() {
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        System.out.println("✅ EMAIL FROM TOKEN: " + email);
+
+        // ✅ IMPORTANT FIX → ignore case match
+        Account acc = repo.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("Account not found for email: " + email));
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("accountNumber", acc.getAccountNumber());
+        map.put("balance", acc.getBalance());
+        map.put("email", acc.getEmail());
+
+        return map;
+    }
+
+    // ✅ CREDIT
+    @PutMapping("/credit/{accountNumber}/{amount}")
+    public Map<String, Object> credit(@PathVariable String accountNumber, @PathVariable double amount) {
+
+        Account acc = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        acc.setBalance(acc.getBalance() + amount);
+        repo.save(acc);
+
+        return success("Credited Successfully", acc.getBalance());
+    }
+
+    // ✅ DEBIT
+    @PutMapping("/debit/{accountNumber}/{amount}")
+    public Map<String, Object> debit(@PathVariable String accountNumber, @PathVariable double amount) {
+
+        Account acc = repo.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        if (acc.getBalance() < amount) {
+            throw new RuntimeException("Insufficient balance");
+        }
+
+        acc.setBalance(acc.getBalance() - amount);
+        repo.save(acc);
+
+        return success("Debited Successfully", acc.getBalance());
+    }
+
+    // ✅ COMMON RESPONSE
+    private Map<String, Object> success(String msg, double balance) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", 200);
+        map.put("message", msg);
+        map.put("balance", balance);
+        map.put("timestamp", java.time.LocalDateTime.now());
+        return map;
+    }
+}

@@ -1,0 +1,24 @@
+.dashboard-card {
+    color: white;
+    border: none;
+    border-radius: 15px;
+}
+
+.dashboard-card h2 {
+    margin-top: 10px;
+}
+
+.action-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: 0.3s;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+}
+
+.action-card h1 {
+    font-size: 50px;
+}

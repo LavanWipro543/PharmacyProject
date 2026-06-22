@@ -1,0 +1,86 @@
+package com.neobank.transaction.controller;
+
+import com.neobank.transaction.entity.Transaction;
+import com.neobank.transaction.service.TransactionService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/transactions")
+@CrossOrigin
+public class TransactionController {
+
+    @Autowired
+    private TransactionService service;
+
+    // ✅ Deposit
+    @PostMapping("/deposit")
+    public String deposit(@RequestBody Map<String, Object> data) {
+
+        String acc = (String) data.get("accountNumber");
+        double amount = ((Number) data.get("amount")).doubleValue();
+
+        return service.deposit(acc, amount);
+    }
+
+    // ✅ Withdraw
+    @PostMapping("/withdraw")
+    public String withdraw(@RequestBody Map<String, Object> data) {
+
+        String acc = (String) data.get("accountNumber");
+        double amount = ((Number) data.get("amount")).doubleValue();
+
+        return service.withdraw(acc, amount);
+    }
+
+    // ✅ Transfer
+    @PostMapping("/transfer")
+    public String transfer(@RequestBody Map<String, Object> data) {
+
+        String from = (String) data.get("fromAccount");
+        String to = (String) data.get("toAccount");
+        double amount = ((Number) data.get("amount")).doubleValue();
+
+        return service.transfer(from, to, amount);
+    }
+
+    @GetMapping("/statement-detailed/{accountNumber}")
+    public List<StatementDTO> getStatement(@PathVariable String accountNumber) {
+
+        return service.getFullStatement(accountNumber);
+    }
+
+    
+    @GetMapping("/mini/{accountNumber}")
+    public Map<String, Object> miniStatement(@PathVariable String accountNumber) {
+
+        List<Transaction> list = service.getMiniStatement(accountNumber);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("accountNumber", accountNumber);
+        response.put("count", list.size());
+        response.put("transactions", list);
+
+        return response;
+    }
+    // ✅ Transaction history
+    @GetMapping("/{accountNumber}")
+    public List<Transaction> getTransactions(@PathVariable String accountNumber) {
+
+        return service.getTransactions(accountNumber);
+    }
+    @PostMapping("/transfer-beneficiary")
+    public String transferBeneficiary(@RequestBody Map<String, Object> data) {
+
+        String from = (String) data.get("fromAccount");
+        Long beneficiaryId = Long.valueOf(data.get("beneficiaryId").toString());
+        double amount = Double.parseDouble(data.get("amount").toString());
+
+        return service.transferUsingBeneficiary(from, beneficiaryId, amount);
+    }
+}

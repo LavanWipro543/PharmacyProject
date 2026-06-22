@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.m2e.core.pom.overview">
+		<list key="ciManagementUrl">
+		</list>
+		<list key="ciManagementSystem">
+		</list>
+		<list key="issueManagementSystem">
+		</list>
+		<list key="issueManagementUrl">
+		</list>
+	</section>
+	<section name="org.eclipse.m2e.core.pom.dependencies">
+	</section>
+	<section name="MavenProjectImportWizardPage">
+		<list key="rootDirectory">
+			<item value="C:\Users\NO20695865\git\upgradSpringBoot\With_Rest_template\With_Rest_template\ProductService-1"/>
+			<item value="C:\Users\NO20695865\git\upgradSpringBoot\With_Rest_template\With_Rest_template\CouponService-1"/>
+			<item value="C:\Users\NO20695865\Downloads\Day-30\Day-30\Springcommunication11\Springcommunication11"/>
+			<item value="C:\Users\NO20695865\Downloads\Day-30\Day-30\Springcommunication11\Springcommunication01"/>
+			<item value="C:\Users\NO20695865\Downloads\Day-30\Day-30\Springcommunication1\Springcommunication1"/>
+			<item value="C:\Users\NO20695865\Downloads\Day-30\Day-30\discovery-server"/>
+			<item value="C:\Users\NO20695865\Downloads\Day-30\Day-30\Api-GateWay2"/>
+			<item value="C:\Users\NO20695865\Downloads\Api-Gatwway (1)\Api-Gatwway"/>
+			<item value="C:\Users\NO20695865\git\upgradSpringBoot\Springcommunication3\Springcommunication3"/>
+			<item value="C:\Users\NO20695865\git\upgradSpringBoot\SpringComminication2"/>
+			<item value="C:\Users\NO20695865\git\upgradSpringBoot\Springcommunication1\Springcommunication1\Springcommunication1"/>
+			<item value="C:\Users\NO20695865\git\upgradSpringBoot\Springcommunication3"/>
+			<item value="C:\Users\NO20695865\git\upgradSpringBoot\Springcommunication1"/>
+			<item value="C:\Users\NO20695865\OneDrive - Wipro\Desktop\wipro\EmployeeProject"/>
+			<item value="C:\Users\NO20695865\OneDrive - Wipro\Desktop\wipro\spring-boot-jwt-without-JPA\spring-boot-jwt-without-JPA\spring-boot-jwt"/>
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]-[version]"/>
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+	<section name="MavenProjectWizardLocationPage">
+		<list key="location">
+			<item value="C:\Users\NO20695865\Documents\workspace-spring-tool-suite-4-4.23.1.RELEASE\Auth-Service"/>
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+	<section name="MavenProjectWizardArchetypePage">
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+	<section name="Maven2ProjectWizardArchifactPage">
+		<list key="package">
+		</list>
+		<list key="groupId">
+		</list>
+		<list key="artifactId">
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+		<list key="version">
+			<item value="0.0.1-SNAPSHOT"/>
+		</list>
+	</section>
+	<section name="MavenProjectWizardArtifactPage">
+		<list key="groupId">
+		</list>
+		<list key="name">
+		</list>
+		<list key="artifactId">
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+		<list key="version">
+			<item value="0.0.1-SNAPSHOT"/>
+		</list>
+	</section>
+</section>

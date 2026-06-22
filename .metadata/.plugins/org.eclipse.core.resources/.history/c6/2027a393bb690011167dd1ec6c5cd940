@@ -1,0 +1,5 @@
+package com.neobank.beneficiary.exception;
+
+public class GlobalExceptionHandler {
+
+}

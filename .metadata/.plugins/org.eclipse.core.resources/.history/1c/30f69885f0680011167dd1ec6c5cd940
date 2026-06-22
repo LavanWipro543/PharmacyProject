@@ -1,0 +1,113 @@
+package com.neobank.transaction.service;
+
+import com.neobank.transaction.entity.Transaction;
+import com.neobank.transaction.repository.TransactionRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+@Service
+public class TransactionService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private TransactionRepository repo;
+
+    private final String ACCOUNT_URL = "http://ACCOUNT-SERVICE/accounts";
+
+    // ✅ DEPOSIT
+    public String deposit(String accountNumber, double amount) {
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            restTemplate.put(ACCOUNT_URL + "/credit/" + accountNumber + "/" + amount, null);
+
+            save("CREDIT", null, accountNumber, amount, "SUCCESS", email);
+
+            return "✅ Deposit Successful";
+
+        } catch (Exception e) {
+
+            save("CREDIT", null, accountNumber, amount, "FAILED", email);
+
+            return "❌ Deposit Failed";
+        }
+    }
+
+    // ✅ WITHDRAW
+    public String withdraw(String accountNumber, double amount) {
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            restTemplate.put(ACCOUNT_URL + "/debit/" + accountNumber + "/" + amount, null);
+
+            save("DEBIT", accountNumber, null, amount, "SUCCESS", email);
+
+            return "✅ Withdraw Successful";
+
+        } catch (Exception e) {
+
+            save("DEBIT", accountNumber, null, amount, "FAILED", email);
+
+            return "❌ Withdraw Failed";
+        }
+    }
+
+    // ✅ TRANSFER (SAFE VERSION 🔥)
+    public String transfer(String fromAccount, String toAccount, double amount) {
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+
+            // ✅ STEP 1: DEBIT
+            restTemplate.put(ACCOUNT_URL + "/debit/" + fromAccount + "/" + amount, null);
+
+            try {
+                // ✅ STEP 2: CREDIT
+                restTemplate.put(ACCOUNT_URL + "/credit/" + toAccount + "/" + amount, null);
+
+                save("TRANSFER", fromAccount, toAccount, amount, "SUCCESS", email);
+
+                return "✅ Transfer Successful";
+
+            } catch (Exception creditFail) {
+
+                // ✅ ROLLBACK (VERY IMPORTANT 🔥)
+                restTemplate.put(ACCOUNT_URL + "/credit/" + fromAccount + "/" + amount, null);
+
+                save("TRANSFER", fromAccount, toAccount, amount, "FAILED", email);
+
+                return "❌ Transfer Failed (Rollback Done)";
+            }
+
+        } catch (Exception e) {
+
+            save("TRANSFER", fromAccount, toAccount, amount, "FAILED", email);
+
+            return "❌ Transfer Failed (Debit Issue)";
+        }
+    }
+
+    // ✅ SAVE
+    private void save(String type, String from, String to, double amount,
+                      String status, String email) {
+
+        Transaction t = new Transaction();
+        t.setType(type);
+        t.setFromAccount(from);
+        t.setToAccount(to);
+        t.setAmount(amount);
+        t.setStatus(status);
+        t.setEmail(email);
+        t.setTimestamp(LocalDateTime.now());
+
+        repo.save(t);
+    }
+}
