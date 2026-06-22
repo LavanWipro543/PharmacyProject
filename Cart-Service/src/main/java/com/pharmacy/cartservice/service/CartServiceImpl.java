@@ -1,5 +1,7 @@
 package com.pharmacy.cartservice.service;
-
+import com.pharmacy.cartservice.dto.PrescriptionResponse;
+import com.pharmacy.cartservice.exception.PrescriptionRequiredException;
+import com.pharmacy.cartservice.feign.PrescriptionClient;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,16 +23,35 @@ public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
     private final MedicineClient medicineClient;
+    private final PrescriptionClient prescriptionClient;
 
-    public CartServiceImpl(CartRepository cartRepository, MedicineClient medicineClient) {
+    public CartServiceImpl(CartRepository cartRepository, MedicineClient medicineClient,PrescriptionClient prescriptionClient) {
         this.cartRepository = cartRepository;
         this.medicineClient = medicineClient;
+		this.prescriptionClient = prescriptionClient;
     }
 
     @Override
     public CartResponse addToCart(CartRequest cartRequest) {
 
         MedicineResponse medicine = medicineClient.getMedicineById(cartRequest.getMedicineId());
+        if (Boolean.TRUE.equals(medicine.getPrescriptionRequired())) {
+
+            List<PrescriptionResponse> prescriptions =
+                    prescriptionClient.getCustomerPrescriptions(
+                            cartRequest.getCustomerId());
+
+            boolean approved = prescriptions.stream()
+                    .anyMatch(p ->
+                            "APPROVED".equalsIgnoreCase(
+                                    p.getStatus()));
+
+            if (!approved) {
+
+                throw new PrescriptionRequiredException(
+                        "Approved prescription required before adding this medicine to cart");
+            }
+        }
 
         Cart cart = cartRepository.findByCustomerId(cartRequest.getCustomerId())
                 .orElseGet(() -> {
